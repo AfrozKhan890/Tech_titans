@@ -1,0 +1,132 @@
+@model ProductDetailsViewModel
+@{
+    ViewData["Title"] = $"Product - {Model.Product.Name}";
+    var p = Model.Product;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <a asp-action="Index" class="small text-muted"><i class="fa-solid fa-arrow-left me-1"></i>Back to Products</a>
+        <h3 class="mb-0 mt-1">@p.Name</h3>
+        <span class="ml-badge @StatusBadgeHelper.For(p.Status) mt-1 d-inline-block">@p.Status</span>
+    </div>
+    <div class="d-flex gap-2">
+        @if (p.Status == ProductStatus.Inactive || p.Status == ProductStatus.Removed)
+        {
+            <form asp-action="Activate" asp-route-id="@p.ProductId" method="post" data-confirm="Reactivate this listing?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ml-accent btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Activate</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Deactivate" asp-route-id="@p.ProductId" method="post" data-confirm="Deactivate this listing?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-power-off me-1"></i>Deactivate</button>
+            </form>
+        }
+        @if (p.Status != ProductStatus.Removed)
+        {
+            <form asp-action="Remove" asp-route-id="@p.ProductId" method="post" data-confirm="Remove this listing for violating platform guidelines?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash me-1"></i>Remove Listing</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-tag"></i></div>
+            <div><div class="ml-stat-value">$@p.Price.ToString("N2")</div><div class="ml-stat-label">Price / @p.Unit</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div><div class="ml-stat-value">@p.StockQuantity</div><div class="ml-stat-label">In Stock</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-star"></i></div>
+            <div><div class="ml-stat-value">@Model.AverageRating.ToString("N1")</div><div class="ml-stat-label">Avg. Rating</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div><div class="ml-stat-value">@Model.TotalUnitsOrdered</div><div class="ml-stat-label">Units Ordered</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Listing Information</h6>
+            <dl class="row mb-0 small">
+                <dt class="col-12 col-sm-5 text-muted">Farmer</dt>
+                <dd class="col-12 col-sm-7">
+                    @if (p.Farmer != null)
+                    {
+                        <a asp-area="Admin" asp-controller="Farmers" asp-action="Details" asp-route-id="@p.Farmer.FarmerId">@p.Farmer.StallName</a>
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Category</dt><dd class="col-12 col-sm-7">@(p.Category?.Name ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Price</dt><dd class="col-12 col-sm-7">$@p.Price.ToString("N2") / @p.Unit</dd>
+                <dt class="col-12 col-sm-5 text-muted">Stock Quantity</dt><dd class="col-12 col-sm-7">@p.StockQuantity</dd>
+                <dt class="col-12 col-sm-5 text-muted">Listed On</dt><dd class="col-12 col-sm-7">@p.CreatedAt.ToString("dd MMM yyyy")</dd>
+            </dl>
+            @if (!string.IsNullOrWhiteSpace(p.Description))
+            {
+                <hr />
+                <div class="small text-muted mb-1">Description</div>
+                <div class="small">@p.Description</div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="ml-card">
+            <h6 class="mb-3">Reviews (@Model.Reviews.Count)</h6>
+            @if (Model.Reviews.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var r in Model.Reviews)
+                    {
+                        <li class="py-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">@(r.Customer?.FullName ?? "Customer")</span>
+                                <span class="text-warning">
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <i class="fa-solid fa-star @(i < r.Rating ? "" : "text-muted opacity-25")"></i>
+                                    }
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(r.Comment))
+                            {
+                                <div class="small">"@r.Comment"</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-regular fa-comment-dots d-block"></i>No reviews found</div>
+            }
+        </div>
+    </div>
+</div>

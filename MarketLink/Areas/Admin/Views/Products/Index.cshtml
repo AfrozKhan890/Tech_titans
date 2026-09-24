@@ -1,0 +1,199 @@
+@model ProductIndexViewModel
+@{
+    ViewData["Title"] = "Products";
+    var routeValues = new Dictionary<string, string?>
+    {
+        ["SearchTerm"] = Model.Filter.SearchTerm,
+        ["Status"] = Model.Filter.Status?.ToString(),
+        ["CategoryId"] = Model.Filter.CategoryId?.ToString(),
+        ["FarmerId"] = Model.Filter.FarmerId?.ToString(),
+        ["SortBy"] = Model.Filter.SortBy,
+        ["PageSize"] = Model.Filter.PageSize.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0">Products</h3>
+        <div class="text-muted small">Moderate listings across all farmers.</div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-carrot"></i></div>
+            <div><div class="ml-stat-value">@Model.TotalProducts</div><div class="ml-stat-label">Total Listings</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <div><div class="ml-stat-value">@Model.ActiveCount</div><div class="ml-stat-label">Active</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-box-open"></i></div>
+            <div><div class="ml-stat-value">@Model.SoldOutCount</div><div class="ml-stat-label">Sold Out</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-ban"></i></div>
+            <div><div class="ml-stat-value">@Model.RemovedCount</div><div class="ml-stat-label">Removed</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="ml-card mb-4">
+    <form method="get" asp-action="Index" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Search</label>
+            <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control form-control-sm" placeholder="Product or farmer..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Status</label>
+            <select name="Status" class="form-select form-select-sm">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues(typeof(ProductStatus)).Cast<ProductStatus>())
+                {
+                    <option value="@status" selected="@(Model.Filter.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Category</label>
+            <select name="CategoryId" class="form-select form-select-sm">
+                <option value="">All categories</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat.CategoryId" selected="@(Model.Filter.CategoryId == cat.CategoryId)">@cat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Farmer</label>
+            <select name="FarmerId" class="form-select form-select-sm">
+                <option value="">All farmers</option>
+                @foreach (var f in Model.Farmers)
+                {
+                    <option value="@f.FarmerId" selected="@(Model.Filter.FarmerId == f.FarmerId)">@f.StallName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Sort By</label>
+            <select name="SortBy" class="form-select form-select-sm">
+                <option value="newest" selected="@(Model.Filter.SortBy == "newest")">Newest</option>
+                <option value="name" selected="@(Model.Filter.SortBy == "name")">Name (A-Z)</option>
+                <option value="price_asc" selected="@(Model.Filter.SortBy == "price_asc")">Price (Low-High)</option>
+                <option value="price_desc" selected="@(Model.Filter.SortBy == "price_desc")">Price (High-Low)</option>
+                <option value="stock" selected="@(Model.Filter.SortBy == "stock")">Stock (Low-High)</option>
+            </select>
+        </div>
+        <div class="col-md-1 d-flex gap-2">
+            <button type="submit" class="btn btn-ml-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter"></i></button>
+        </div>
+        <div class="col-12">
+            <a asp-action="Index" class="small text-muted">Reset all filters</a>
+        </div>
+    </form>
+</div>
+
+<div class="ml-card">
+    @if (Model.Result.Items.Any())
+    {
+        <div class="table-responsive">
+            <table class="table ml-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Farmer</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Result.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@p.Name</div>
+                                <div class="small text-muted">Listed @p.CreatedAt.ToString("dd MMM yyyy")</div>
+                            </td>
+                            <td>@(p.Farmer?.StallName ?? "-")</td>
+                            <td>@(p.Category?.Name ?? "-")</td>
+                            <td>$@p.Price.ToString("N2") / @p.Unit</td>
+                            <td>@p.StockQuantity</td>
+                            <td><span class="ml-badge @StatusBadgeHelper.For(p.Status)">@p.Status</span></td>
+                            <td class="text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">Actions</button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" asp-action="Details" asp-route-id="@p.ProductId"><i class="fa-regular fa-eye me-2"></i>View Details</a></li>
+                                        <li><hr class="dropdown-divider" /></li>
+                                        @if (p.Status == ProductStatus.Inactive || p.Status == ProductStatus.Removed)
+                                        {
+                                            <li>
+                                                <form asp-action="Activate" asp-route-id="@p.ProductId" method="post" data-confirm="Reactivate this listing?">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="dropdown-item"><i class="fa-solid fa-rotate-left me-2"></i>Activate</button>
+                                                </form>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li>
+                                                <form asp-action="Deactivate" asp-route-id="@p.ProductId" method="post" data-confirm="Deactivate this listing?">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-power-off me-2"></i>Deactivate</button>
+                                                </form>
+                                            </li>
+                                        }
+                                        @if (p.Status != ProductStatus.Removed)
+                                        {
+                                            <li>
+                                                <form asp-action="Remove" asp-route-id="@p.ProductId" method="post" data-confirm="Remove this listing for violating platform guidelines?">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-trash me-2"></i>Remove Listing</button>
+                                                </form>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Showing @((Model.Result.PageNumber - 1) * Model.Result.PageSize + 1)–@(Math.Min(Model.Result.PageNumber * Model.Result.PageSize, Model.Result.TotalCount)) of @Model.Result.TotalCount listings
+            </span>
+            @{
+                ViewData["RouteValues"] = routeValues;
+            }
+            @await Html.PartialAsync("_Pagination", Model.Result.ToPagingMeta())
+        </div>
+    }
+    else
+    {
+        <div class="ml-empty-state">
+            <i class="fa-solid fa-carrot d-block"></i>
+            No products found
+        </div>
+    }
+</div>

@@ -1,0 +1,109 @@
+@model ReviewDetailsViewModel
+@{
+    ViewData["Title"] = "Review Details";
+    var r = Model.Review;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <a asp-action="Index" class="small text-muted"><i class="fa-solid fa-arrow-left me-1"></i>Back to Reviews</a>
+        <h3 class="mb-0 mt-1">Review #@r.ReviewId</h3>
+        @if (r.IsRemoved)
+        {
+            <span class="ml-badge ml-badge-cancelled mt-1 d-inline-block">Removed</span>
+        }
+        else
+        {
+            <span class="ml-badge ml-badge-active mt-1 d-inline-block">Visible</span>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        @if (r.IsRemoved)
+        {
+            <form asp-action="Restore" asp-route-id="@r.ReviewId" method="post" data-confirm="Restore this review so it is visible again?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ml-accent btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Restore</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Remove" asp-route-id="@r.ReviewId" method="post" data-confirm="Remove this review for violating platform guidelines?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash me-1"></i>Remove Review</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Review Information</h6>
+            <dl class="row mb-0 small">
+                <dt class="col-12 col-sm-5 text-muted">Customer</dt>
+                <dd class="col-12 col-sm-7">
+                    @if (r.Customer != null)
+                    {
+                        <a asp-area="Admin" asp-controller="Customers" asp-action="Details" asp-route-id="@r.Customer.CustomerId">@r.Customer.FullName</a>
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Farmer</dt>
+                <dd class="col-12 col-sm-7">
+                    @if (r.Farmer != null)
+                    {
+                        <a asp-area="Admin" asp-controller="Farmers" asp-action="Details" asp-route-id="@r.Farmer.FarmerId">@r.Farmer.StallName</a>
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Product</dt>
+                <dd class="col-12 col-sm-7">
+                    @if (r.Product != null)
+                    {
+                        <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@r.Product.ProductId">@r.Product.Name</a>
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Rating</dt>
+                <dd class="col-12 col-sm-7">
+                    <span class="text-warning">
+                        @for (int i = 0; i < 5; i++)
+                        {
+                            <i class="fa-solid fa-star @(i < r.Rating ? "" : "text-muted opacity-25")"></i>
+                        }
+                    </span>
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Submitted</dt>
+                <dd class="col-12 col-sm-7">@r.ReviewDate.ToString("dd MMM yyyy, HH:mm")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="ml-card">
+            <h6 class="mb-3">Comment</h6>
+            @if (!string.IsNullOrWhiteSpace(r.Comment))
+            {
+                <p class="mb-0">"@r.Comment"</p>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-regular fa-comment-dots d-block"></i>No comment left with this review</div>
+            }
+        </div>
+    </div>
+</div>

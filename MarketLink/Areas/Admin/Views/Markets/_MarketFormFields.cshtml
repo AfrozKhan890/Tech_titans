@@ -1,0 +1,63 @@
+@model MarketFormViewModel
+@* Shared field markup for Create and Edit. Included via @Html.Partial from
+   the strongly-typed Create/Edit views so both stay in sync automatically. *@
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="MarketName" class="form-label small"></label>
+        <input asp-for="MarketName" class="form-control" />
+        <span asp-validation-for="MarketName" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="OperatingDays" class="form-label small"></label>
+        <input asp-for="OperatingDays" class="form-control" placeholder="e.g. Sat, Sun" />
+        <span asp-validation-for="OperatingDays" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Address" class="form-label small"></label>
+        <input asp-for="Address" class="form-control" />
+        <span asp-validation-for="Address" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="OpeningTime" class="form-label small"></label>
+        <input asp-for="OpeningTime" class="form-control" />
+        <span asp-validation-for="OpeningTime" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ClosingTime" class="form-label small"></label>
+        <input asp-for="ClosingTime" class="form-control" />
+        <span asp-validation-for="ClosingTime" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Latitude" class="form-label small"></label>
+        <input asp-for="Latitude" class="form-control" placeholder="e.g. 24.8607" />
+        <span asp-validation-for="Latitude" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Longitude" class="form-label small"></label>
+        <input asp-for="Longitude" class="form-control" placeholder="e.g. 67.0011" />
+        <span asp-validation-for="Longitude" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="MapProvider" class="form-label small"></label>
+        <select asp-for="MapProvider" class="form-select">
+            <option value="OpenStreetMap">OpenStreetMap</option>
+            <option value="Google Maps">Google Maps</option>
+        </select>
+        <span asp-validation-for="MapProvider" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="MapLink" class="form-label small"></label>
+        <input asp-for="MapLink" class="form-control" placeholder="https://..." />
+        <span asp-validation-for="MapLink" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Status" class="form-label small"></label>
+        <select asp-for="Status" class="form-select">
+            @foreach (var status in Enum.GetValues(typeof(MarketStatus)).Cast<MarketStatus>())
+            {
+                <option value="@status" selected="@(Model.Status == status)">@status</option>
+            }
+        </select>
+    </div>
+</div>

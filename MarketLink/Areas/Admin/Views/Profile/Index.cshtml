@@ -1,0 +1,172 @@
+@model AdminProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    var pw = ViewBag.PasswordModel as ChangePasswordViewModel
+             ?? new ChangePasswordViewModel();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0">My Profile</h3>
+        <div class="text-muted small">Manage your account details and password.</div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger py-2 small">@TempData["ErrorMessage"]</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="ml-card">
+            <h6 class="mb-3"><i class="fa-solid fa-user me-2"></i>Profile Information</h6>
+            <form asp-action="Index" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="AdminId" />
+                <input type="hidden" asp-for="Role" />
+                <input type="hidden" asp-for="CreatedAt" />
+                <input type="hidden" asp-for="LastLoginAt" />
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger py-2 small">
+                        <div asp-validation-summary="ModelOnly"></div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label asp-for="FullName" class="form-label small"></label>
+                    <input asp-for="FullName" class="form-control form-control-sm" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label small"></label>
+                    <input asp-for="Email" class="form-control form-control-sm" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Role</label>
+                    <input value="@Model.Role" class="form-control form-control-sm" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Member Since</label>
+                    <input value="@Model.CreatedAt.ToString("dd MMM yyyy")" class="form-control form-control-sm" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Last Login</label>
+                    <input value="@(Model.LastLoginAt?.ToString("dd MMM yyyy, HH:mm") ?? "Never")" class="form-control form-control-sm" readonly />
+                </div>
+
+                <button type="submit" class="btn btn-ml-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i>Save Profile
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="ml-card">
+            <h6 class="mb-3"><i class="fa-solid fa-key me-2"></i>Change Password</h6>
+            <form asp-action="ChangePassword" method="post" novalidate>
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label small">Current Password</label>
+                    <div class="input-group input-group-sm">
+                        <input name="CurrentPassword" type="password" class="form-control password-field" required />
+                        <span class="input-group-text password-toggle" style="cursor:pointer;">
+                            <i class="fa-solid fa-eye"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">New Password</label>
+                    <div class="input-group input-group-sm">
+                        <input name="NewPassword" id="profileNewPassword" type="password"
+                               class="form-control password-field" minlength="8" required />
+                        <span class="input-group-text password-toggle" style="cursor:pointer;">
+                            <i class="fa-solid fa-eye"></i>
+                        </span>
+                    </div>
+                    <ul class="pw-rules-settings" id="profilePwRules">
+                        <li id="pRuleLength"><i class="fa-solid fa-circle"></i> At least 8 characters</li>
+                        <li id="pRuleUpper"><i class="fa-solid fa-circle"></i> One uppercase letter</li>
+                        <li id="pRuleLower"><i class="fa-solid fa-circle"></i> One lowercase letter</li>
+                        <li id="pRuleNumber"><i class="fa-solid fa-circle"></i> One number</li>
+                        <li id="pRuleSpecial"><i class="fa-solid fa-circle"></i> One special character</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Confirm New Password</label>
+                    <div class="input-group input-group-sm">
+                        <input name="ConfirmPassword" type="password" class="form-control password-field" required />
+                        <span class="input-group-text password-toggle" style="cursor:pointer;">
+                            <i class="fa-solid fa-eye"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-ml-accent">
+                    <i class="fa-solid fa-key me-1"></i>Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            document.querySelectorAll('.password-toggle').forEach(function (toggle) {
+                toggle.addEventListener('click', function () {
+                    var input = this.closest('.input-group').querySelector('.password-field');
+                    var icon = this.querySelector('i');
+                    if (!input) return;
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            });
+
+            var newPw = document.getElementById('profileNewPassword');
+            if (newPw) {
+                var rules = {
+                    pRuleLength: function (v) { return v.length >= 8; },
+                    pRuleUpper: function (v) { return /[A-Z]/.test(v); },
+                    pRuleLower: function (v) { return /[a-z]/.test(v); },
+                    pRuleNumber: function (v) { return /\d/.test(v); },
+                    pRuleSpecial: function (v) { return /[^A-Za-z0-9]/.test(v); }
+                };
+                newPw.addEventListener('input', function () {
+                    var v = this.value;
+                    Object.keys(rules).forEach(function (id) {
+                        var li = document.getElementById(id);
+                        if (!li) return;
+                        var icon = li.querySelector('i');
+                        if (rules[id](v)) {
+                            li.classList.add('valid');
+                            icon.classList.remove('fa-circle');
+                            icon.classList.add('fa-check-circle');
+                        } else {
+                            li.classList.remove('valid');
+                            icon.classList.remove('fa-check-circle');
+                            icon.classList.add('fa-circle');
+                        }
+                    });
+                });
+            }
+        })();
+    </script>
+}

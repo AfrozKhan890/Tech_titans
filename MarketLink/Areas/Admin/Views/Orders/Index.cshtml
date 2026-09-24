@@ -1,0 +1,173 @@
+@model OrderIndexViewModel
+@{
+    ViewData["Title"] = "Orders";
+    var routeValues = new Dictionary<string, string?>
+    {
+        ["SearchTerm"] = Model.Filter.SearchTerm,
+        ["Status"] = Model.Filter.Status?.ToString(),
+        ["FarmerId"] = Model.Filter.FarmerId?.ToString(),
+        ["DateFrom"] = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+        ["DateTo"] = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+        ["PageSize"] = Model.Filter.PageSize.ToString()
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0">Orders</h3>
+        <div class="text-muted small">Platform-wide view of every pre-order. Payment is settled at pickup — no online payment involved.</div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div><div class="ml-stat-value">@Model.TotalOrders</div><div class="ml-stat-label">Total Orders</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-regular fa-clock"></i></div>
+            <div><div class="ml-stat-value">@Model.PlacedCount</div><div class="ml-stat-label">Placed</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div><div class="ml-stat-value">@Model.ReadyForPickupCount</div><div class="ml-stat-label">Ready</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <div><div class="ml-stat-value">@Model.CompletedCount</div><div class="ml-stat-label">Completed</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-ban"></i></div>
+            <div><div class="ml-stat-value">@Model.CancelledCount</div><div class="ml-stat-label">Cancelled</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div><div class="ml-stat-value">$@Model.TotalRevenue.ToString("N0")</div><div class="ml-stat-label">Revenue</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="ml-card mb-4">
+    <form method="get" asp-action="Index" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Search</label>
+            <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control form-control-sm" placeholder="Order #, customer, farmer..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Status</label>
+            <select name="Status" class="form-select form-select-sm">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>())
+                {
+                    <option value="@status" selected="@(Model.Filter.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Farmer</label>
+            <select name="FarmerId" class="form-select form-select-sm">
+                <option value="">All farmers</option>
+                @foreach (var f in Model.Farmers)
+                {
+                    <option value="@f.FarmerId" selected="@(Model.Filter.FarmerId == f.FarmerId)">@f.StallName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">From</label>
+            <input type="date" name="DateFrom" value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">To</label>
+            <input type="date" name="DateTo" value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-1 d-flex gap-2">
+            <button type="submit" class="btn btn-ml-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter"></i></button>
+        </div>
+        <div class="col-12">
+            <a asp-action="Index" class="small text-muted">Reset all filters</a>
+        </div>
+    </form>
+</div>
+
+<div class="ml-card">
+    @if (Model.Result.Items.Any())
+    {
+        <div class="table-responsive">
+            <table class="table ml-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Farmer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Pickup</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model.Result.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">#@o.OrderId</div>
+                                <div class="small text-muted">@o.OrderDate.ToString("dd MMM yyyy")</div>
+                            </td>
+                            <td>@(o.Customer?.FullName ?? "-")</td>
+                            <td>@(o.Farmer?.StallName ?? "-")</td>
+                            <td>@o.OrderItems.Sum(oi => oi.Quantity) item(s)</td>
+                            <td>$@o.TotalAmount.ToString("N2")</td>
+                            <td>
+                                @if (o.PickupDate.HasValue)
+                                {
+                                    @o.PickupDate.Value.ToString("dd MMM")
+                                    if (o.PickupTime.HasValue)
+                                    {
+                                        @(" · " + o.PickupTime.Value.ToString(@"hh\:mm"))
+                                    }
+                                }
+                                else
+                                {
+                                    @:-
+                                }
+                            </td>
+                            <td><span class="ml-badge @StatusBadgeHelper.For(o.OrderStatus)">@o.OrderStatus</span></td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@o.OrderId" class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-eye me-1"></i>View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <span class="text-muted small">
+                Showing @((Model.Result.PageNumber - 1) * Model.Result.PageSize + 1)–@(Math.Min(Model.Result.PageNumber * Model.Result.PageSize, Model.Result.TotalCount)) of @Model.Result.TotalCount orders
+            </span>
+            @{
+                ViewData["RouteValues"] = routeValues;
+            }
+            @await Html.PartialAsync("_Pagination", Model.Result.ToPagingMeta())
+        </div>
+    }
+    else
+    {
+        <div class="ml-empty-state">
+            <i class="fa-solid fa-basket-shopping d-block"></i>
+            No orders available
+        </div>
+    }
+</div>

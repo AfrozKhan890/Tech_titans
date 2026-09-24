@@ -1,0 +1,182 @@
+@model FarmerDetailsViewModel
+@{
+    ViewData["Title"] = $"Farmer - {Model.Farmer.StallName}";
+    var f = Model.Farmer;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <a asp-action="Index" class="small text-muted"><i class="fa-solid fa-arrow-left me-1"></i>Back to Farmers</a>
+        <h3 class="mb-0 mt-1">@f.StallName</h3>
+        <span class="ml-badge @StatusBadgeHelper.For(f.Status) mt-1 d-inline-block">@f.Status</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@f.FarmerId" class="btn btn-ml-primary btn-sm"><i class="fa-regular fa-pen-to-square me-1"></i>Edit</a>
+        @if (f.Status != FarmerStatus.Approved)
+        {
+            <form asp-action="Approve" asp-route-id="@f.FarmerId" method="post" data-confirm="Approve this farmer's registration?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ml-accent btn-sm"><i class="fa-solid fa-check me-1"></i>Approve</button>
+            </form>
+        }
+        @if (f.Status != FarmerStatus.Suspended)
+        {
+            <form asp-action="Suspend" asp-route-id="@f.FarmerId" method="post" data-confirm="Suspend this farmer?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-ban me-1"></i>Suspend</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div><div class="ml-stat-value">@Model.TotalOrders</div><div class="ml-stat-label">Total Orders</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div><div class="ml-stat-value">$@Model.TotalRevenue.ToString("N2")</div><div class="ml-stat-label">Revenue</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-star"></i></div>
+            <div><div class="ml-stat-value">@Model.AverageRating.ToString("N1")</div><div class="ml-stat-label">Avg. Rating</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-carrot"></i></div>
+            <div><div class="ml-stat-value">@Model.Products.Count</div><div class="ml-stat-label">Products</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Farmer Information</h6>
+            <dl class="row mb-0 small">
+                <dt class="col-12 col-sm-5 text-muted">Contact Person</dt><dd class="col-12 col-sm-7">@f.ContactPerson</dd>
+                <dt class="col-12 col-sm-5 text-muted">Phone</dt><dd class="col-12 col-sm-7">@f.Phone</dd>
+                <dt class="col-12 col-sm-5 text-muted">Email</dt><dd class="col-12 col-sm-7">@f.Email</dd>
+                <dt class="col-12 col-sm-5 text-muted">Address</dt><dd class="col-12 col-sm-7">@(f.Address ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Market</dt><dd class="col-12 col-sm-7">@(f.Market?.MarketName ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Operating Days</dt><dd class="col-12 col-sm-7">@(f.OperatingDays ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Pickup Window</dt>
+                <dd class="col-12 col-sm-7">
+                    @if (f.PickupWindowStart.HasValue && f.PickupWindowEnd.HasValue)
+                    {
+                        var startText = f.PickupWindowStart.Value.ToString(@"hh\:mm");
+                        var endText = f.PickupWindowEnd.Value.ToString(@"hh\:mm");
+                        @(startText + " - " + endText)
+                    }
+                    else
+                    {
+                        @:-
+                    }
+                </dd>
+                <dt class="col-12 col-sm-5 text-muted">Registered</dt><dd class="col-12 col-sm-7">@f.RegisteredAt.ToString("dd MMM yyyy")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Products (@Model.Products.Count)</h6>
+            @if (Model.Products.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table ml-table mb-0">
+                        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in Model.Products)
+                            {
+                                <tr>
+                                    <td>@p.Name</td>
+                                    <td>@(p.Category?.Name ?? "-")</td>
+                                    <td>$@p.Price.ToString("N2") / @p.Unit</td>
+                                    <td>@p.StockQuantity</td>
+                                    <td><span class="ml-badge @StatusBadgeHelper.For(p.Status)">@p.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-solid fa-carrot d-block"></i>No products listed</div>
+            }
+        </div>
+
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Recent Orders</h6>
+            @if (Model.RecentOrders.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table ml-table mb-0">
+                        <thead><tr><th>#</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.RecentOrders)
+                            {
+                                <tr>
+                                    <td>#@o.OrderId</td>
+                                    <td>@(o.Customer?.FullName ?? "-")</td>
+                                    <td>$@o.TotalAmount.ToString("N2")</td>
+                                    <td><span class="ml-badge @StatusBadgeHelper.For(o.OrderStatus)">@o.OrderStatus</span></td>
+                                    <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-solid fa-basket-shopping d-block"></i>No orders available</div>
+            }
+        </div>
+
+        <div class="ml-card">
+            <h6 class="mb-3">Reviews</h6>
+            @if (Model.Reviews.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var r in Model.Reviews)
+                    {
+                        <li class="py-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">@(r.Customer?.FullName ?? "Customer")</span>
+                                <span class="text-warning">
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <i class="fa-solid fa-star @(i < r.Rating ? "" : "text-muted opacity-25")"></i>
+                                    }
+                                </span>
+                            </div>
+                            <div class="small text-muted">@(r.Product?.Name ?? "")</div>
+                            @if (!string.IsNullOrWhiteSpace(r.Comment))
+                            {
+                                <div class="small">"@r.Comment"</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-regular fa-comment-dots d-block"></i>No reviews found</div>
+            }
+        </div>
+    </div>
+</div>

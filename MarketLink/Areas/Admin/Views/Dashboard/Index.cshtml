@@ -1,0 +1,317 @@
+@model MarketLink.Areas.Admin.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0">Welcome back, @(User?.Identity?.Name ?? "Admin")</h3>
+        <div class="text-muted small">Here&rsquo;s what&rsquo;s happening across MarketLink today.</div>
+    </div>
+    <div class="text-muted small"><i class="fa-regular fa-calendar me-1"></i>@DateTime.Now.ToString("dddd, dd MMM yyyy")</div>
+</div>
+
+<!-- Top summary cards (explicitly required by SRS) -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-tractor"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.TotalFarmers</div>
+                <div class="ml-stat-label">Total Farmers</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-users"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.TotalCustomers</div>
+                <div class="ml-stat-label">Total Customers</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-store"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.TotalMarkets</div>
+                <div class="ml-stat-label">Total Markets</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.TotalOrders</div>
+                <div class="ml-stat-label">Total Orders</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Revenue trend chart -->
+    <div class="col-lg-8">
+        <div class="ml-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Revenue Summary (last 6 months)</h6>
+                <span class="text-muted small">
+                    This month: <strong class="text-dark">$@Model.RevenueThisMonth.ToString("N2")</strong>
+                    &middot; Last month: $@Model.RevenueLastMonth.ToString("N2")
+                </span>
+            </div>
+            <div class="ml-chart-wrap ml-chart-tall">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order status breakdown -->
+    <div class="col-lg-4">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Order Status</h6>
+            @if (Model.OrderStatusBreakdown.Any())
+            {
+                <div class="ml-chart-wrap">
+                    <canvas id="orderStatusChart"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state py-3">
+                    <i class="fa-regular fa-chart-bar d-block"></i>
+                    No orders available
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Pending farmer approvals -->
+    <div class="col-lg-6">
+        <div class="ml-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Pending Farmer Approvals</h6>
+                <span class="ml-badge ml-badge-pending">@Model.PendingFarmerApprovals pending</span>
+            </div>
+            @if (Model.PendingFarmers.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table ml-table mb-0">
+                        <thead>
+                            <tr><th>Stall</th><th>Contact</th><th>Registered</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in Model.PendingFarmers)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@f.StallName</td>
+                                    <td>@f.ContactPerson</td>
+                                    <td>@f.RegisteredAt.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end">
+                                        <a asp-area="Admin" asp-controller="Farmers" asp-action="Details" asp-route-id="@f.FarmerId" class="btn btn-sm btn-ml-primary">Review</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-regular fa-circle-check d-block"></i>
+                    No pending farmer approvals
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="col-lg-6">
+        <div class="ml-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Recent Orders</h6>
+                <a asp-area="Admin" asp-controller="Orders" asp-action="Index" class="small">View all</a>
+            </div>
+            @if (Model.RecentOrders.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table ml-table mb-0">
+                        <thead>
+                            <tr><th>#</th><th>Customer</th><th>Farmer</th><th>Total</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in Model.RecentOrders)
+                            {
+                                <tr>
+                                    <td>#@o.OrderId</td>
+                                    <td>@(o.Customer?.FullName ?? "-")</td>
+                                    <td>@(o.Farmer?.StallName ?? "-")</td>
+                                    <td>$@o.TotalAmount.ToString("N2")</td>
+                                    <td><span class="ml-badge @StatusBadgeHelper.For(o.OrderStatus)">@o.OrderStatus</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-regular fa-folder-open d-block"></i>
+                    No orders available
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Most active farmers -->
+    <div class="col-lg-4">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Most Active Farmers</h6>
+            @if (Model.MostActiveFarmers.Any(f => f.OrderCount > 0))
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var f in Model.MostActiveFarmers.Where(f => f.OrderCount > 0))
+                    {
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span>@f.StallName</span>
+                            <span class="ml-badge ml-badge-approved">@f.OrderCount orders</span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-regular fa-face-meh d-block"></i>
+                    No farmer activity yet
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Popular products -->
+    <div class="col-lg-4">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Popular Products</h6>
+            @if (Model.PopularProducts.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var p in Model.PopularProducts)
+                    {
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span>@p.ProductName</span>
+                            <span class="ml-badge ml-badge-active">@p.UnitsSold sold</span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-regular fa-face-meh d-block"></i>
+                    No product sales yet
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Recent reviews -->
+    <div class="col-lg-4">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Recent Reviews</h6>
+            @if (Model.RecentReviews.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var r in Model.RecentReviews)
+                    {
+                        <li class="py-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">@(r.Customer?.FullName ?? "Customer")</span>
+                                <span class="text-warning">
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <i class="fa-solid fa-star @(i < r.Rating ? "" : "text-muted opacity-25")"></i>
+                                    }
+                                </span>
+                            </div>
+                            <div class="small text-muted">@(r.Farmer?.StallName ?? "")</div>
+                            @if (!string.IsNullOrWhiteSpace(r.Comment))
+                            {
+                                <div class="small">"@r.Comment"</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-regular fa-comment-dots d-block"></i>
+                    No reviews found
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script>
+        const revenueLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrend.Select(r => r.MonthLabel)));
+        const revenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrend.Select(r => r.Revenue)));
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: revenueData,
+                    borderColor: '#5C6F2B',
+                    backgroundColor: 'rgba(92,111,43,0.12)',
+                    tension: 0.35,
+                    fill: true,
+                    pointBackgroundColor: '#DE802B'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        @if (Model.OrderStatusBreakdown.Any())
+        {
+            <text>
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderStatusBreakdown.Select(s => s.Status)));
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderStatusBreakdown.Select(s => s.Count)));
+
+            new Chart(document.getElementById('orderStatusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: ['#D7E4F0', '#E3D6F5', '#DE802B', '#D8E983', '#F3D0CB']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+            </text>
+        }
+    </script>
+}

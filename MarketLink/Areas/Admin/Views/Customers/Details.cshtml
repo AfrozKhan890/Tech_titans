@@ -1,0 +1,138 @@
+@model CustomerDetailsViewModel
+@{
+    ViewData["Title"] = $"Customer - {Model.Customer.FullName}";
+    var c = Model.Customer;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <a asp-action="Index" class="small text-muted"><i class="fa-solid fa-arrow-left me-1"></i>Back to Customers</a>
+        <h3 class="mb-0 mt-1">@c.FullName</h3>
+        <span class="ml-badge @StatusBadgeHelper.For(c.Status) mt-1 d-inline-block">@c.Status</span>
+    </div>
+    <div class="d-flex gap-2">
+        @if (c.Status == CustomerStatus.Inactive)
+        {
+            <form asp-action="Activate" asp-route-id="@c.CustomerId" method="post" data-confirm="Activate this customer account?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ml-accent btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Activate</button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Deactivate" asp-route-id="@c.CustomerId" method="post" data-confirm="Deactivate this customer account?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-power-off me-1"></i>Deactivate</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success py-2 small">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div><div class="ml-stat-value">@Model.TotalOrders</div><div class="ml-stat-label">Total Orders</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div><div class="ml-stat-value">$@Model.TotalSpent.ToString("N2")</div><div class="ml-stat-label">Total Spent</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <div><div class="ml-stat-value">@Model.CompletedOrders</div><div class="ml-stat-label">Completed</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-ban"></i></div>
+            <div><div class="ml-stat-value">@Model.CancelledOrders</div><div class="ml-stat-label">Cancelled</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Customer Information</h6>
+            <dl class="row mb-0 small">
+                <dt class="col-12 col-sm-5 text-muted">Full Name</dt><dd class="col-12 col-sm-7">@c.FullName</dd>
+                <dt class="col-12 col-sm-5 text-muted">Email</dt><dd class="col-12 col-sm-7">@c.Email</dd>
+                <dt class="col-12 col-sm-5 text-muted">Phone</dt><dd class="col-12 col-sm-7">@(c.Phone ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Address</dt><dd class="col-12 col-sm-7">@(c.Address ?? "-")</dd>
+                <dt class="col-12 col-sm-5 text-muted">Registered</dt><dd class="col-12 col-sm-7">@c.RegisteredAt.ToString("dd MMM yyyy")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="ml-card mb-3">
+            <h6 class="mb-3">Order History</h6>
+            @if (Model.Orders.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table ml-table mb-0">
+                        <thead><tr><th>#</th><th>Farmer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.Orders)
+                            {
+                                <tr>
+                                    <td>#@o.OrderId</td>
+                                    <td>@(o.Farmer?.StallName ?? "-")</td>
+                                    <td>@o.OrderItems.Sum(oi => oi.Quantity) item(s)</td>
+                                    <td>$@o.TotalAmount.ToString("N2")</td>
+                                    <td><span class="ml-badge @StatusBadgeHelper.For(o.OrderStatus)">@o.OrderStatus</span></td>
+                                    <td>@o.OrderDate.ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-solid fa-basket-shopping d-block"></i>No orders available</div>
+            }
+        </div>
+
+        <div class="ml-card">
+            <h6 class="mb-3">Reviews Left</h6>
+            @if (Model.Reviews.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var r in Model.Reviews)
+                    {
+                        <li class="py-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">@(r.Farmer?.StallName ?? r.Product?.Name ?? "Review")</span>
+                                <span class="text-warning">
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <i class="fa-solid fa-star @(i < r.Rating ? "" : "text-muted opacity-25")"></i>
+                                    }
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(r.Comment))
+                            {
+                                <div class="small">"@r.Comment"</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state"><i class="fa-regular fa-comment-dots d-block"></i>No reviews found</div>
+            }
+        </div>
+    </div>
+</div>

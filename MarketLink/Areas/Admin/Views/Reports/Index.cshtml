@@ -1,0 +1,333 @@
+@model ReportsIndexViewModel
+@{
+    ViewData["Title"] = "Reports";
+    var f = Model.Filter;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0">Reports</h3>
+        <div class="text-muted small">Platform-wide order and revenue reporting. All figures are computed from live database records.</div>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <i class="fa-solid fa-print me-1"></i>Print
+        </button>
+    </div>
+</div>
+
+@* ---------- Filter bar ---------- *@
+<div class="ml-card mb-4">
+    <form method="get" asp-action="Index" class="row g-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label small mb-1">From</label>
+            <input type="date" name="DateFrom" value="@f.DateFrom?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">To</label>
+            <input type="date" name="DateTo" value="@f.DateTo?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Market</label>
+            <select name="MarketId" class="form-select form-select-sm">
+                <option value="">All markets</option>
+                @foreach (var m in Model.Markets)
+                {
+                    <option value="@m.MarketId" selected="@(f.MarketId == m.MarketId)">@m.MarketName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Farmer</label>
+            <select name="FarmerId" class="form-select form-select-sm">
+                <option value="">All farmers</option>
+                @foreach (var farmer in Model.Farmers)
+                {
+                    <option value="@farmer.FarmerId" selected="@(f.FarmerId == farmer.FarmerId)">@farmer.StallName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1">Status</label>
+            <select name="Status" class="form-select form-select-sm">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>())
+                {
+                    <option value="@status" selected="@(f.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-ml-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Apply</button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Reset</a>
+        </div>
+    </form>
+</div>
+
+@* ---------- KPI cards ---------- *@
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon primary"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.TotalOrders</div>
+                <div class="ml-stat-label">Total Orders</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+                <div class="ml-stat-value">@Model.CompletedOrders</div>
+                <div class="ml-stat-label">Completed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon accent"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div>
+                <div class="ml-stat-value">$@Model.TotalRevenue.ToString("N2")</div>
+                <div class="ml-stat-label">Revenue (excl. cancelled)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="ml-stat-card">
+            <div class="ml-stat-icon secondary"><i class="fa-solid fa-chart-simple"></i></div>
+            <div>
+                <div class="ml-stat-value">$@Model.AverageOrderValue.ToString("N2")</div>
+                <div class="ml-stat-label">Avg. Order Value</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    @* ---------- Revenue chart ---------- *@
+    <div class="col-lg-8">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Revenue by Month</h6>
+            @if (Model.RevenueByMonth.Any(r => r.Revenue > 0))
+            {
+                <div class="ml-chart-wrap ml-chart-tall">
+                    <canvas id="reportRevenueChart"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state py-4">
+                    <i class="fa-regular fa-chart-bar d-block"></i>
+                    No revenue recorded for the selected filters
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ---------- Order status doughnut ---------- *@
+    <div class="col-lg-4">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Order Status</h6>
+            @if (Model.OrderStatusBreakdown.Any())
+            {
+                <div class="ml-chart-wrap">
+                    <canvas id="reportStatusChart"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="ml-empty-state py-4">
+                    <i class="fa-regular fa-chart-bar d-block"></i>
+                    No orders match the filters
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ---------- Orders by Market ---------- *@
+<div class="ml-card mb-4">
+    <h6 class="mb-3">Orders by Market</h6>
+    @if (Model.OrdersByMarket.Any())
+    {
+        <div class="table-responsive">
+            <table class="table ml-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Market</th>
+                        <th class="text-end">Orders</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.OrdersByMarket)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-area="Admin" asp-controller="Markets" asp-action="Details" asp-route-id="@row.MarketId">@row.MarketName</a>
+                            </td>
+                            <td class="text-end">@row.OrderCount</td>
+                            <td class="text-end fw-semibold">$@row.Revenue.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="ml-empty-state">
+            <i class="fa-solid fa-store d-block"></i>
+            No market orders match the filters
+        </div>
+    }
+</div>
+
+@* ---------- Orders by Farmer ---------- *@
+<div class="ml-card mb-4">
+    <h6 class="mb-3">Top Farmers by Revenue</h6>
+    @if (Model.OrdersByFarmer.Any())
+    {
+        <div class="table-responsive">
+            <table class="table ml-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Farmer</th>
+                        <th class="text-end">Orders</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.OrdersByFarmer)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-area="Admin" asp-controller="Farmers" asp-action="Details" asp-route-id="@row.FarmerId">@row.StallName</a>
+                            </td>
+                            <td class="text-end">@row.OrderCount</td>
+                            <td class="text-end fw-semibold">$@row.Revenue.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="ml-empty-state">
+            <i class="fa-solid fa-tractor d-block"></i>
+            No farmer orders match the filters
+        </div>
+    }
+</div>
+
+<div class="row g-3">
+    @* ---------- Top Products ---------- *@
+    <div class="col-lg-6">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Top Products by Units Sold</h6>
+            @if (Model.TopProducts.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var p in Model.TopProducts)
+                    {
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span>@p.ProductName</span>
+                            <span class="ml-badge ml-badge-active">@p.UnitsSold sold</span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-solid fa-carrot d-block"></i>
+                    No product sales match the filters
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ---------- Top Customers ---------- *@
+    <div class="col-lg-6">
+        <div class="ml-card h-100">
+            <h6 class="mb-3">Top Customers by Spend</h6>
+            @if (Model.TopCustomers.Any())
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var c in Model.TopCustomers)
+                    {
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <a asp-area="Admin" asp-controller="Customers" asp-action="Details" asp-route-id="@c.CustomerId">@c.FullName</a>
+                            <span class="small text-muted">@c.OrderCount orders &middot; <strong class="text-dark">$@c.TotalSpent.ToString("N2")</strong></span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="ml-empty-state">
+                    <i class="fa-solid fa-users d-block"></i>
+                    No customer activity matches the filters
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script>
+        @if (Model.RevenueByMonth.Any(r => r.Revenue > 0))
+        {
+            <text>
+            const reportRevenueLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth.Select(r => r.MonthLabel)));
+            const reportRevenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByMonth.Select(r => r.Revenue)));
+            new Chart(document.getElementById('reportRevenueChart'), {
+                type: 'bar',
+                data: {
+                    labels: reportRevenueLabels,
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: reportRevenueData,
+                        backgroundColor: 'rgba(92,111,43,0.65)',
+                        borderColor: '#5C6F2B',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+            </text>
+        }
+
+        @if (Model.OrderStatusBreakdown.Any())
+        {
+            <text>
+            const reportStatusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderStatusBreakdown.Select(s => s.Status)));
+            const reportStatusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderStatusBreakdown.Select(s => s.Count)));
+            new Chart(document.getElementById('reportStatusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: reportStatusLabels,
+                    datasets: [{
+                        data: reportStatusData,
+                        backgroundColor: ['#D7E4F0', '#E3D6F5', '#DE802B', '#D8E983', '#F3D0CB']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+            </text>
+        }
+    </script>
+}
