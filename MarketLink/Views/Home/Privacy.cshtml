@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Privacy Policy";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9">
+            <div class="mb-5">
+                <h1 class="fw-bold mb-2" style="font-family:var(--font-heading);color:var(--heading);">Privacy Policy</h1>
+                <p class="text-muted mb-0">Last updated: @(DateTime.UtcNow.ToString("MMMM d, yyyy"))</p>
+            </div>
+
+            <p style="color:var(--body-text);">MarketLink eGreen Basket exists to move fresh food from a local farm to a nearby kitchen. That only takes a small amount of personal information, and this page states exactly what we keep and why.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">What we store</h4>
+            <ul style="color:var(--body-text);">
+                <li>Your name, email and the phone number you add, so you can sign in and be reached about an order.</li>
+                <li>Saved addresses and your default city, used only to suggest nearby markets.</li>
+                <li>Your basket, favourites and order history, so orders can be prepared and re-ordered.</li>
+                <li>For farm accounts: the stall details, listings, pickup slots and reviews attached to your farm.</li>
+            </ul>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">Why we store it</h4>
+            <p style="color:var(--body-text);">To place and notify you about orders, to let the farmer know who is collecting, to keep a record for quality disputes, and to show you produce matched to your area. We do not sell your details.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">Who else sees it</h4>
+            <p style="color:var(--body-text);">The farmer behind an order sees your name, contact number and pickup choice — enough to pack the box and call you if needed. Market staff see only the order reference at pickup. Other shoppers never see your profile.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">Cookies and sign-in</h4>
+            <p style="color:var(--body-text);">A session cookie keeps you signed in and a security cookie protects forms from forgery. Both are essential to the marketplace; clearing them signs you out. Dark-mode preference is stored in your browser.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">Retention and deletion</h4>
+            <p style="color:var(--body-text);">Order records are kept while your account exists so receipts and history stay available. Ask us to delete your account and we remove your profile, addresses, basket and favourites; past orders keep the minimum record required for accounting.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">Control your data</h4>
+            <p style="color:var(--body-text);">You can edit or remove everything from your dashboard: <a asp-area="Customer" asp-controller="Profile" asp-action="Index">profile</a>, <a asp-area="Customer" asp-controller="Profile" asp-action="Addresses">addresses</a>, <a asp-area="Customer" asp-controller="Favorites" asp-action="Index">favourites</a> and <a asp-area="Customer" asp-controller="Orders" asp-action="History">orders</a>. For anything else, contact us through the <a asp-controller="Home" asp-action="Contact">contact page</a>.</p>
+
+            <p class="text-muted small mt-5">This policy pairs with our <a asp-controller="Home" asp-action="Terms">Terms &amp; Conditions</a>.</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,109 @@
+@model MarketLink.Models.ProductInputModel
+@{
+    var categories = ViewBag.Categories as IEnumerable<MarketLink.Models.Category> ?? Enumerable.Empty<MarketLink.Models.Category>();
+    var farmers = ViewBag.Farmers as IEnumerable<MarketLink.Models.Farmer> ?? Enumerable.Empty<MarketLink.Models.Farmer>();
+    var isEdit = Model.Id > 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+        <div class="card" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--card);">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background:transparent;border-bottom:1px solid var(--border);padding:20px;">
+                <h5 style="margin:0;font-weight:700;color:var(--heading);">@(isEdit ? "Edit Produce" : "Add Produce")</h5>
+                <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary btn-sm btn-pill">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Catalog
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form asp-area="Admin" asp-controller="Products" asp-action="@(isEdit ? "Edit" : "Create")" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-7">
+                            <label asp-for="Name" class="form-label" style="font-weight:600;font-size:13px;">Produce Name <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g. Organic Roma Tomatoes" />
+                            <span asp-validation-for="Name" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label asp-for="FarmerId" class="form-label" style="font-weight:600;font-size:13px;">Seller Farm <span class="text-danger">*</span></label>
+                            <select asp-for="FarmerId" class="form-select" asp-items="@(farmers.Select(f => new SelectListItem(f.FarmName, f.Id.ToString())))"></select>
+                            <div style="font-size:11px;color:var(--muted);">Only approved farms appear in the public marketplace.</div>
+                            <span asp-validation-for="FarmerId" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label asp-for="CategoryId" class="form-label" style="font-weight:600;font-size:13px;">Category <span class="text-danger">*</span></label>
+                            <select asp-for="CategoryId" class="form-select" asp-items="@(categories.Select(c => new SelectListItem(c.Name, c.Id.ToString())))"></select>
+                            <span asp-validation-for="CategoryId" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="PricePerKg" class="form-label" style="font-weight:600;font-size:13px;">Price per Unit ($) <span class="text-danger">*</span></label>
+                            <input asp-for="PricePerKg" type="number" step="0.01" min="0.01" class="form-control" />
+                            <span asp-validation-for="PricePerKg" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="StockQuantityKg" class="form-label" style="font-weight:600;font-size:13px;">Stock Quantity <span class="text-danger">*</span></label>
+                            <input asp-for="StockQuantityKg" type="number" min="0" class="form-control" />
+                            <span asp-validation-for="StockQuantityKg" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Unit" class="form-label" style="font-weight:600;font-size:13px;">Unit</label>
+                            <select asp-for="Unit" class="form-select">
+                                <option value="KG">Kilogram (KG)</option>
+                                <option value="Bunch">Bunch</option>
+                                <option value="Box">Box / Basket</option>
+                                <option value="Piece">Piece / Item</option>
+                                <option value="Dozen">Dozen</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Season" class="form-label" style="font-weight:600;font-size:13px;">Harvest Season</label>
+                            <select asp-for="Season" asp-items="Html.GetEnumSelectList<MarketLink.Models.Enums.Season>()" class="form-select"></select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Tags" class="form-label" style="font-weight:600;font-size:13px;">Tags</label>
+                            <input asp-for="Tags" class="form-control" placeholder="fresh, local, organic" />
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label" style="font-weight:600;font-size:13px;">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="ImageUrl" class="form-label" style="font-weight:600;font-size:13px;">Image URL</label>
+                            <input asp-for="ImageUrl" type="url" class="form-control" placeholder="https://..." />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="ImageFile" class="form-label" style="font-weight:600;font-size:13px;">or upload a photo</label>
+                            <input asp-for="ImageFile" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" />
+                            <span asp-validation-for="ImageFile" class="text-danger" style="font-size:12px;"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-4 p-3" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsOrganic" class="form-check-input" type="checkbox" />
+                                    <label asp-for="IsOrganic" class="form-check-label" style="font-weight:600;font-size:13px;">Certified Organic</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
+                                    <label asp-for="IsAvailable" class="form-check-label" style="font-weight:600;font-size:13px;">Available for Order</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end gap-2 pt-2">
+                            <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="btn btn-light px-4" style="border:1px solid var(--border);">Cancel</a>
+                            <button type="submit" class="btn btn-primary-green px-4 btn-pill"><i class="fas fa-check me-2"></i>Save Produce</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

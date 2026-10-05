@@ -1,0 +1,408 @@
+@using MarketLink.Models
+@{
+    ViewData["Title"] = "Dashboard Overview";
+
+    List<T> L<T>(string key) => (ViewData[key] as List<T>) ?? new List<T>();
+
+    var trendLabels = L<string>("Trend30Labels");
+    var trendRevenue = L<decimal>("Trend30Revenue");
+    var trendOrders = L<int>("Trend30Orders");
+    var statusLabels = L<string>("StatusLabels");
+    var statusData = L<int>("StatusData");
+    var weekdayLabels = L<string>("WeekdayLabels");
+    var weekdayData = L<int>("WeekdayData");
+    var topFarmerLabels = L<string>("TopFarmerLabels");
+    var topFarmerData = L<decimal>("TopFarmerData");
+    var categoryLabels = L<string>("CategoryLabels");
+    var categoryData = L<int>("CategoryData");
+    var growthLabels = L<string>("GrowthLabels");
+    var growthData = L<int>("GrowthData");
+
+    var recentOrders = L<Order>("RecentOrders");
+    var pendingFarmers = L<Farmer>("PendingFarmerList");
+    var lowStock = L<Product>("LowStock");
+
+    double revTrend = (double)ViewBag.RevenueTrend;
+    double ordTrend = (double)ViewBag.OrdersTrend;
+    double custTrend = (double)ViewBag.CustomerTrend;
+
+    string TrendBadge(double v) => v >= 0 ? "up" : "down";
+    string TrendText(double v) => (v >= 0 ? "▲ " : "▼ ") + Math.Abs(v).ToString("0.#") + "%";
+}
+
+<style>
+    .dash-hero{position:relative;overflow:hidden;border-radius:var(--radius);padding:28px 32px;margin-bottom:24px;
+        background:linear-gradient(120deg,var(--primary) 0%,#3d4a1c 55%,#2b3313 100%);color:#fff;border:1px solid var(--border);}
+    .dash-hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:rgba(216,233,131,.12);}
+    .dash-hero::before{content:"";position:absolute;right:120px;bottom:-90px;width:200px;height:200px;border-radius:50%;background:rgba(222,128,43,.18);}
+    .dash-hero h3{font-weight:700;margin:0 0 6px;color:#fff;}
+    .dash-hero p{margin:0;color:rgba(255,255,255,.8);font-size:14px;}
+    .dash-hero .hero-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+        color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;backdrop-filter:blur(4px);}
+    .dash-hero .hero-pill:hover{background:rgba(255,255,255,.24);color:#fff;}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;height:100%;position:relative;overflow:hidden;
+        transition:transform .2s ease, box-shadow .2s ease;}
+    .kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+    .kpi .kpi-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .kpi .kpi-value{font-size:28px;font-weight:700;line-height:1.1;margin:14px 0 2px;color:var(--heading);}
+    .kpi .kpi-label{font-size:13px;color:var(--muted);}
+    .kpi .kpi-sub{font-size:12px;color:var(--muted);margin-top:8px;}
+    .trend{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;}
+    .trend.up{background:rgba(46,160,90,.16);color:#39c07a;}
+    .trend.down{background:rgba(220,53,69,.16);color:#f0707d;}
+    .kpi canvas{position:absolute;left:0;right:0;bottom:0;width:100%!important;height:46px!important;opacity:.9;pointer-events:none;}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);height:100%;}
+    .panel-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;}
+    .panel-head h6{margin:0;font-weight:700;color:var(--heading);}
+    .panel-head small{color:var(--muted);}
+    .panel-body{padding:20px 22px;}
+    .seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px;}
+    .seg button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;}
+    .seg button.active{background:var(--primary);color:#fff;}
+    .chart-box{position:relative;height:290px;}
+    .chart-box.sm{height:240px;}
+    .mini-stat{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--border);font-size:14px;}
+    .mini-stat:last-child{border-bottom:0;}
+    .list-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+    .list-row:last-child{border-bottom:0;}
+    .avatar{width:38px;height:38px;border-radius:50%;background:var(--soft-highlight);color:var(--primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+    .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+    .empty-note{color:var(--muted);text-align:center;padding:28px 0;font-size:14px;}
+</style>
+
+<!-- Hero -->
+<div class="dash-hero">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position:relative;z-index:2;">
+        <div>
+            <h3>Welcome back, Admin 👋</h3>
+            <p>@DateTime.UtcNow.ToString("dddd, MMMM d, yyyy") · Here is what's happening across MarketLink today.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if ((int)ViewBag.PendingFarmers > 0)
+            {
+                <a class="hero-pill" asp-area="Admin" asp-controller="Farmers" asp-action="Index" asp-route-status="Pending"><i class="fas fa-user-clock"></i>@ViewBag.PendingFarmers farmer(s) awaiting approval</a>
+            }
+            @if ((int)ViewBag.PendingOrders > 0)
+            {
+                <a class="hero-pill" asp-area="Admin" asp-controller="Orders" asp-action="Index"><i class="fas fa-shopping-basket"></i>@ViewBag.PendingOrders pending order(s)</a>
+            }
+            <a class="hero-pill" asp-area="Admin" asp-controller="Reports" asp-action="Index"><i class="fas fa-chart-bar"></i>View reports</a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI cards -->
+<div class="row g-4 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="kpi-icon" style="background:rgba(216,233,131,.18);color:#c9dc6b;"><i class="fas fa-dollar-sign"></i></div>
+                <span class="trend @TrendBadge(revTrend)">@TrendText(revTrend)</span>
+            </div>
+            <div class="kpi-value">$@(((decimal)ViewBag.TotalRevenue).ToString("N0"))</div>
+            <div class="kpi-label">Platform Volume (completed)</div>
+            <div class="kpi-sub">$@(((decimal)ViewBag.WeekRevenue).ToString("N0")) in the last 7 days</div>
+            <div style="height:38px;"></div>
+            <canvas id="spark1"></canvas>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="kpi-icon" style="background:rgba(222,128,43,.16);color:#e99043;"><i class="fas fa-shopping-basket"></i></div>
+                <span class="trend @TrendBadge(ordTrend)">@TrendText(ordTrend)</span>
+            </div>
+            <div class="kpi-value">@ViewBag.OrderCount</div>
+            <div class="kpi-label">Total Orders</div>
+            <div class="kpi-sub">Avg. order $@(((decimal)ViewBag.AvgOrderValue).ToString("N2")) · @ViewBag.CompletionRate% completed</div>
+            <div style="height:38px;"></div>
+            <canvas id="spark2"></canvas>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="kpi-icon" style="background:rgba(92,160,240,.16);color:#6fb0ff;"><i class="fas fa-users"></i></div>
+                <span class="trend @TrendBadge(custTrend)">@TrendText(custTrend)</span>
+            </div>
+            <div class="kpi-value">@ViewBag.CustomerCount</div>
+            <div class="kpi-label">Customers</div>
+            <div class="kpi-sub">@ViewBag.NewCustomers new in the last 7 days</div>
+            <div style="height:38px;"></div>
+            <canvas id="spark3"></canvas>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="kpi-icon" style="background:rgba(156,171,132,.2);color:#b3c49a;"><i class="fas fa-tractor"></i></div>
+                <span class="trend up">@ViewBag.MarketCount markets</span>
+            </div>
+            <div class="kpi-value">@ViewBag.FarmerCount</div>
+            <div class="kpi-label">Active Farmers</div>
+            <div class="kpi-sub">@ViewBag.ProductCount products listed · @ViewBag.PendingFarmers pending</div>
+            <div style="height:38px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue + status -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-8">
+        <div class="panel">
+            <div class="panel-head">
+                <div><h6>Revenue &amp; Orders</h6><small>Order value (bars) and order count (line)</small></div>
+                <div class="seg" id="rangeSeg">
+                    <button type="button" data-range="7">7 days</button>
+                    <button type="button" data-range="30" class="active">30 days</button>
+                </div>
+            </div>
+            <div class="panel-body"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Orders by Status</h6><small>Where every order stands</small></div></div>
+            <div class="panel-body"><div class="chart-box"><canvas id="statusChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Farmers / categories / weekday -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-4">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Top Farmers</h6><small>By order value</small></div></div>
+            <div class="panel-body"><div class="chart-box sm"><canvas id="farmerChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Catalog Mix</h6><small>Products by category</small></div></div>
+            <div class="panel-body"><div class="chart-box sm"><canvas id="categoryChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Busiest Days</h6><small>Orders by weekday</small></div></div>
+            <div class="panel-body"><div class="chart-box sm"><canvas id="weekdayChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Growth + approvals + stock -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-5">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Customer Growth</h6><small>New sign-ups per week</small></div></div>
+            <div class="panel-body"><div class="chart-box sm"><canvas id="growthChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="panel">
+            <div class="panel-head">
+                <div><h6>Pending Approvals</h6><small>Farmers waiting for review</small></div>
+                <a asp-area="Admin" asp-controller="Farmers" asp-action="Index" asp-route-status="Pending" class="btn btn-sm btn-outline-green">Review</a>
+            </div>
+            <div class="panel-body">
+                @if (!pendingFarmers.Any())
+                {
+                    <div class="empty-note"><i class="fas fa-check-circle fa-2x mb-2" style="color:#39c07a;"></i><div>All caught up. No farmers waiting.</div></div>
+                }
+                @foreach (var f in pendingFarmers)
+                {
+                    <div class="list-row">
+                        <div class="avatar">@(string.IsNullOrEmpty(f.FarmName) ? "F" : f.FarmName.Substring(0, 1).ToUpper())</div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="color:var(--heading);">@f.FarmName</div>
+                            <div style="font-size:12px;color:var(--muted);">@(f.User?.FullName) · @f.RegisteredAt.ToString("MMM d")</div>
+                        </div>
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="panel">
+            <div class="panel-head"><div><h6>Low Stock Alerts</h6><small>Under 10 kg left</small></div></div>
+            <div class="panel-body">
+                @if (!lowStock.Any())
+                {
+                    <div class="empty-note"><i class="fas fa-box-open fa-2x mb-2" style="color:var(--muted);"></i><div>No low-stock products.</div></div>
+                }
+                @foreach (var p in lowStock)
+                {
+                    <div class="list-row">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="color:var(--heading);">@p.Name</div>
+                            <div style="font-size:12px;color:var(--muted);">@(p.Farmer?.FarmName)</div>
+                        </div>
+                        <span class="badge @(p.StockQuantityKg == 0 ? "bg-danger" : "bg-warning text-dark")">@p.StockQuantityKg kg</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent activity -->
+<div class="panel mb-4">
+    <div class="panel-head">
+        <div><h6>Recent Orders</h6><small>Latest activity across the marketplace</small></div>
+        <a asp-area="Admin" asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-green">View all</a>
+    </div>
+    <div class="panel-body p-0">
+        @if (!recentOrders.Any())
+        {
+            <div class="empty-note"><i class="fas fa-inbox fa-2x mb-2"></i><div>No orders yet. They will appear here in real time.</div></div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                    <thead style="background:var(--bg);">
+                        <tr>
+                            @foreach (var h in new[] { "Order", "Customer", "Farm", "Total", "Status", "Placed" })
+                            {
+                                <th style="padding:12px 20px;border-bottom:none;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;">@h</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in recentOrders)
+                        {
+                            var dot = o.Status switch
+                            {
+                                MarketLink.Models.Enums.OrderStatus.Completed => "#39c07a",
+                                MarketLink.Models.Enums.OrderStatus.Cancelled => "#f0707d",
+                                MarketLink.Models.Enums.OrderStatus.Pending => "#f2b24b",
+                                _ => "#6fb0ff"
+                            };
+                            <tr>
+                                <td style="padding:12px 20px;font-weight:600;">@(string.IsNullOrEmpty(o.OrderNumber) ? "#" + o.Id : o.OrderNumber)</td>
+                                <td style="padding:12px 20px;">@(o.Customer?.User?.FullName ?? "Customer")</td>
+                                <td style="padding:12px 20px;">@(o.Farmer?.FarmName ?? "Local Farm")</td>
+                                <td style="padding:12px 20px;font-weight:700;color:var(--primary-text);">$@o.TotalAmount.ToString("N2")</td>
+                                <td style="padding:12px 20px;"><span class="status-dot" style="background:@dot;"></span>@o.Status</td>
+                                <td style="padding:12px 20px;font-size:13px;color:var(--muted);">@o.OrderedAt.ToString("MMM dd, hh:mm tt")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof Chart === 'undefined') return;
+
+        const css = getComputedStyle(document.documentElement);
+        const muted = (css.getPropertyValue('--muted') || '#9aa58a').trim();
+        const grid = 'rgba(160,175,130,.14)';
+        const palette = ['#7d9633', '#e08a3c', '#d8e983', '#6fb0ff', '#b48ae0', '#f0707d', '#9cab84'];
+        Chart.defaults.color = muted;
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+        const trendLabels  = @Json.Serialize(trendLabels);
+        const trendRevenue = @Json.Serialize(trendRevenue);
+        const trendOrders  = @Json.Serialize(trendOrders);
+        const money = v => '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits: 0});
+
+        // KPI sparklines (last 7 days)
+        const spark = (id, data, color) => {
+            const el = document.getElementById(id); if (!el) return;
+            const ctx = el.getContext('2d');
+            const g = ctx.createLinearGradient(0, 0, 0, 46);
+            g.addColorStop(0, color + '66'); g.addColorStop(1, color + '00');
+            new Chart(el, { type: 'line',
+                data: { labels: data.map((_, i) => i), datasets: [{ data, borderColor: color, backgroundColor: g, fill: true, tension: .4, borderWidth: 2, pointRadius: 0 }] },
+                options: { responsive: false, maintainAspectRatio: false, animation: { duration: 900 }, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false, beginAtZero: true } } } });
+        };
+        const cw = el => { const c = document.getElementById(el); if (c) { c.width = c.parentElement.clientWidth; c.height = 46; } };
+        ['spark1','spark2','spark3'].forEach(cw);
+        spark('spark1', trendRevenue.slice(-7), '#c9dc6b');
+        spark('spark2', trendOrders.slice(-7), '#e99043');
+        spark('spark3', @Json.Serialize(growthData), '#6fb0ff');
+
+        // Revenue + orders combo
+        const tctx = document.getElementById('trendChart').getContext('2d');
+        const bar = tctx.createLinearGradient(0, 0, 0, 300);
+        bar.addColorStop(0, 'rgba(125,150,51,.95)'); bar.addColorStop(1, 'rgba(125,150,51,.25)');
+        const trend = new Chart(tctx, {
+            data: {
+                labels: trendLabels,
+                datasets: [
+                    { type: 'bar', label: 'Order value', data: trendRevenue, backgroundColor: bar, borderRadius: 6, yAxisID: 'y', order: 2 },
+                    { type: 'line', label: 'Orders', data: trendOrders, borderColor: '#e08a3c', backgroundColor: '#e08a3c', tension: .4, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, yAxisID: 'y1', order: 1 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                    y: { beginAtZero: true, grid: { color: grid }, ticks: { callback: money } },
+                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 } }
+                },
+                plugins: { tooltip: { callbacks: { label: c => c.dataset.label === 'Order value' ? ' Order value: ' + money(c.raw) : ' Orders: ' + c.raw } } }
+            }
+        });
+        document.querySelectorAll('#rangeSeg button').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('#rangeSeg button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const n = parseInt(btn.dataset.range, 10);
+            trend.data.labels = trendLabels.slice(-n);
+            trend.data.datasets[0].data = trendRevenue.slice(-n);
+            trend.data.datasets[1].data = trendOrders.slice(-n);
+            trend.update();
+        }));
+
+        // Orders by status
+        const statusColors = { Pending: '#f2b24b', Confirmed: '#6fb0ff', Accepted: '#5aa0e0', Processing: '#b48ae0', ReadyForPickup: '#d8e983', Completed: '#39c07a', Cancelled: '#f0707d' };
+        const sl = @Json.Serialize(statusLabels);
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: { labels: sl, datasets: [{ data: @Json.Serialize(statusData), backgroundColor: sl.map(x => statusColors[x] || '#9cab84'), borderWidth: 0, hoverOffset: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 12 } } } }
+        });
+
+        // Top farmers (horizontal bars)
+        new Chart(document.getElementById('farmerChart'), {
+            type: 'bar',
+            data: { labels: @Json.Serialize(topFarmerLabels), datasets: [{ data: @Json.Serialize(topFarmerData), backgroundColor: palette, borderRadius: 6 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + money(c.raw) } } },
+                scales: { x: { beginAtZero: true, grid: { color: grid }, ticks: { callback: money } }, y: { grid: { display: false } } } }
+        });
+
+        // Category mix
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'polarArea',
+            data: { labels: @Json.Serialize(categoryLabels), datasets: [{ data: @Json.Serialize(categoryData), backgroundColor: palette.map(c => c + 'cc'), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: grid }, ticks: { display: false, precision: 0 } } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8 } } } }
+        });
+
+        // Weekday
+        const wd = @Json.Serialize(weekdayData);
+        const wdMax = Math.max(...wd, 0);
+        new Chart(document.getElementById('weekdayChart'), {
+            type: 'bar',
+            data: { labels: @Json.Serialize(weekdayLabels), datasets: [{ data: wd, backgroundColor: wd.map(v => v === wdMax && v > 0 ? '#e08a3c' : 'rgba(125,150,51,.7)'), borderRadius: 6 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } } } }
+        });
+
+        // Growth
+        const gctx = document.getElementById('growthChart').getContext('2d');
+        const gg = gctx.createLinearGradient(0, 0, 0, 240);
+        gg.addColorStop(0, 'rgba(111,176,255,.4)'); gg.addColorStop(1, 'rgba(111,176,255,0)');
+        new Chart(gctx, {
+            type: 'line',
+            data: { labels: @Json.Serialize(growthLabels), datasets: [{ label: 'New customers', data: @Json.Serialize(growthData), borderColor: '#6fb0ff', backgroundColor: gg, fill: true, tension: .4, borderWidth: 2.5, pointBackgroundColor: '#fff', pointBorderColor: '#6fb0ff', pointRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } }, y: { beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } } } }
+        });
+    });
+    </script>
+}

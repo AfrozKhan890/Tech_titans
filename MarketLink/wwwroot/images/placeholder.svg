@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-label="No photo of this produce yet">
+  <rect width="320" height="240" fill="#F6F0D7"/>
+  <g stroke="#E4D8B4" stroke-width="10" stroke-linecap="round">
+    <path d="M-20 60 L60 -20M40 260 L180 120M140 300 L300 140M240 300 L360 180"/>
+  </g>
+  <ellipse cx="160" cy="196" rx="86" ry="12" fill="#DCD0A8"/>
+  <path d="M112 118h96l-10 66a12 12 0 0 1-12 10h-52a12 12 0 0 1-12-10z" fill="#C9964E"/>
+  <path d="M112 118h96l-4 26h-88z" fill="#B8842F"/>
+  <g stroke="#A87526" stroke-width="4" stroke-linecap="round">
+    <path d="M124 150h72M128 168h64"/>
+  </g>
+  <path d="M118 118c0-26 18-42 42-42s42 16 42 42" fill="none" stroke="#A87526" stroke-width="6"/>
+  <circle cx="134" cy="106" r="17" fill="#D4523A"/>
+  <path d="M134 89c4-5 9-6 13-4-3 4-8 6-13 4z" fill="#5C6F2B"/>
+  <circle cx="186" cy="104" r="14" fill="#DE802B"/>
+  <path d="M160 96c8 0 14 6 14 14v10h-28v-10c0-8 6-14 14-14z" fill="#9CAB84"/>
+  <path d="M160 84c-6 2-9 6-9 12h18c0-6-3-10-9-12z" fill="#5C6F2B"/>
+  <path d="M198 92c10 4 14 12 12 22-10-2-16-10-12-22z" fill="#7A8F3A"/>
+</svg>

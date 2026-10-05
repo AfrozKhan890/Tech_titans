@@ -1,0 +1,182 @@
+@model IEnumerable<MarketLink.Models.Product>
+@{
+    ViewData["Title"] = "Home";
+    var categories = (IEnumerable<MarketLink.Models.Category>)ViewBag.Categories;
+    var favoriteProductIds = ViewBag.FavoriteProductIds as HashSet<int> ?? new HashSet<int>();
+}
+
+<section class="home-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 animate-on-scroll">
+                <span class="badge badge-success hero-tag">Picked this week from local farms</span>
+                <h1>Fresh from the farm,<br />to your door.</h1>
+                <p class="lead-text">
+                    Buy straight from farmers near you. Seasonal produce, fair prices, and money that stays in your community.
+                </p>
+                <div class="d-flex gap-3">
+                    <a asp-controller="Products" asp-action="Index" class="btn btn-primary-green btn-lg btn-pill px-4 shadow">Shop now</a>
+                    <a asp-controller="Farmers" asp-action="Index" class="btn btn-outline-green btn-lg btn-pill px-4">Meet the farmers</a>
+                </div>
+
+                <div class="customer-proof mt-5 d-flex align-items-center">
+                    <div class="avatar-group">
+                        <span class="avatar-chip">A</span>
+                        <span class="avatar-chip">R</span>
+                        <span class="avatar-chip">M</span>
+                    </div>
+                    <div class="ms-3">
+                        <div class="count">1,200+</div>
+                        <div class="caption">happy customers</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mt-5 mt-lg-0 animate-on-scroll hero-photo-wrap">
+                <div class="glow"></div>
+                <img src="/images/hero-produce.svg"
+                     alt="Baskets of just-picked vegetables, fruit and herbs from local farms"
+                     class="hero-photo img-fluid rounded-4 shadow-lg" />
+            </div>
+        </div>
+    </div>
+</section>
+
+@if (ViewBag.Announcements is IEnumerable<MarketLink.Models.Announcement> announcements && announcements.Any())
+{
+    <section class="notice-band">
+        <div class="container">
+            @foreach (var item in announcements)
+            {
+                <div class="notice">
+                    <span class="notice-icon"><i class="fas fa-bullhorn"></i></span>
+                    <div>
+                        <div class="notice-title">@item.Title</div>
+                        <div class="notice-text">@item.Message</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<section class="numbers" data-counters>
+    <div class="container">
+        <div class="numbers-grid">
+            <div class="number-item">
+                <div class="number-value"><span data-count="150">0</span><span class="suffix">+</span></div>
+                <div class="number-label">Local farmers</div>
+            </div>
+            <div class="number-item">
+                <div class="number-value"><span data-count="5000">0</span><span class="suffix">+</span></div>
+                <div class="number-label">Products sold</div>
+            </div>
+            <div class="number-item">
+                <div class="number-value"><span data-count="45">0</span></div>
+                <div class="number-label">Active markets</div>
+            </div>
+            <div class="number-item">
+                <div class="number-value">100<span class="suffix">%</span></div>
+                <div class="number-label">Freshness guarantee</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="home-section">
+    <div class="container">
+        <div class="home-section-head d-flex justify-content-between align-items-end">
+            <h2>Shop by category</h2>
+            <a asp-controller="Products" asp-action="Index" class="btn btn-outline-green btn-sm btn-pill">View all</a>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var cat in categories)
+            {
+                var inStock = cat.Products.Count(p => p.IsAvailable)
+                    + cat.Children.Sum(c => c.Products.Count(p => p.IsAvailable));
+                var stockText = inStock switch
+                {
+                    0 => "Coming soon",
+                    1 => "1 fresh item",
+                    _ => $"{inStock} fresh items"
+                };
+                var iconClass = string.IsNullOrWhiteSpace(cat.IconClass) ? "fas fa-leaf" : cat.IconClass;
+
+                <div class="col-6 col-md-4 col-lg animate-on-scroll">
+                    <a asp-controller="Products" asp-action="Index" asp-route-categorySlug="@cat.Slug" class="category-tile card product-card h-100">
+                        <div class="icon-circle"><i class="@iconClass"></i></div>
+                        <h6>@cat.Name</h6>
+                        <div class="item-count">@stockText</div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="home-section on-card">
+    <div class="container">
+        <div class="home-section-head text-center">
+            <h2>New arrivals</h2>
+            <p>Harvested in the last few days.</p>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var p in Model)
+            {
+                var isSaved = favoriteProductIds.Contains(p.Id);
+                var favTitle = isSaved ? "Remove from favorites" : "Save to favorites";
+                var imgSrc = string.IsNullOrEmpty(p.ImageUrl) ? "/images/placeholder.svg" : p.ImageUrl;
+
+                <div class="col-lg-3 col-md-6 animate-on-scroll">
+                    <div class="card product-card arrival-card h-100">
+                        <div class="thumb">
+                            <a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug">
+                                <img src="@imgSrc" class="card-img-top" alt="@p.Name">
+                            </a>
+                            @if (p.IsOrganic)
+                            {
+                                <span class="badge badge-success organic-tag">Organic</span>
+                            }
+                            <button type="button"
+                                    class="btn btn-sm btn-circle shadow-sm fav-toggle favorite-btn @(isSaved ? "active" : "")"
+                                    onclick="ML.Favorites.toggle('Product', @p.Id, this)"
+                                    title="@favTitle" aria-label="@favTitle">
+                                <i class="@(isSaved ? "fas fa-heart text-danger" : "far fa-heart")"></i>
+                            </button>
+                        </div>
+
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div>
+                                    <div class="cat-name">@p.Category?.Name</div>
+                                    <h6 class="prod-name">
+                                        <a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug">@p.Name</a>
+                                    </h6>
+                                </div>
+                                <div class="prod-price">$@p.PricePerKg.ToString("0.00")<small>/kg</small></div>
+                            </div>
+                            <div class="sold-by">Sold by @p.Farmer?.FarmName</div>
+
+                            <div class="mt-auto d-flex gap-2">
+                                <a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug" class="btn btn-outline-green btn-sm flex-grow-1">View</a>
+                                <button class="btn btn-primary-green btn-sm flex-grow-1"
+                                        data-quantities="@p.AvailableQuantities"
+                                        onclick="ML.Cart.addItemDefault(this, @p.Id)">Add to cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="seller-cta">
+    <div class="container animate-on-scroll">
+        <h2>Grow something? Sell it here.</h2>
+        <p>Set up your farm stand for free in a few minutes and start taking orders from people nearby.</p>
+        <a asp-controller="Auth" asp-action="Register" asp-route-role="Farmer" class="btn btn-accent btn-lg btn-pill px-5 shadow-lg">Become a seller</a>
+    </div>
+</section>

@@ -1,0 +1,60 @@
+@{
+    ViewData["Title"] = "Frequently Asked Questions";
+    var faqs = new (string Q, string A)[]
+    {
+        ("How does farm pickup work?",
+         "Add produce to your basket, choose a pickup slot for each farm at checkout, then collect your box at the market stall in that window. You pay the farmer directly at pickup."),
+        ("Why does my basket create more than one order?",
+         "Each farm packs its own box, so produce from different growers becomes separate orders with separate pickup windows. You can track them all under My Orders."),
+        ("Can I cancel an order?",
+         "Yes, while the order is still Pending or Accepted. Open the order in My Orders and use Cancel — the produce is returned to the farmer's stock automatically."),
+        ("Is the produce really organic?",
+         "Only listings marked Organic carry a certification note from the grower. Every listing shows the farm name so you can check the grower's profile."),
+        ("What if an item is out of stock when I arrive?",
+         "Stock is reserved the moment you check out, so your items are packed. If a farmer must cancel, the order status changes and you are notified."),
+        ("I'm a farmer — how do I start selling?",
+         "Register as a Seller, complete your farm profile, add pickup slots and list produce. New stalls appear in the marketplace once an administrator approves the account."),
+        ("When does my farm listing go live?",
+         "Immediately after approval. Until then your products stay hidden from shoppers, but you can keep adding them."),
+    };
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge px-3 py-2 rounded-pill mb-3" style="background:var(--secondary);color:var(--on-light);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;">
+            Good to know
+        </span>
+        <h1 class="fw-bold" style="font-family:var(--font-heading);color:var(--heading);">Frequently Asked Questions</h1>
+        <p class="text-muted mx-auto" style="max-width:620px;">Everything about ordering, picking up and selling fresh produce on MarketLink.</p>
+    </div>
+
+    <div class="mx-auto" style="max-width:860px;">
+        <div class="accordion" id="faqAccordion">
+            @for (var i = 0; i < faqs.Length; i++)
+            {
+                var item = faqs[i];
+                <div class="accordion-item" style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;overflow:hidden;background:var(--card);">
+                    <h2 class="accordion-header" id="faqHeading-@i">
+                        <button class="accordion-button @(i == 0 ? "" : "collapsed") fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse-@i"
+                                aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="faqCollapse-@i"
+                                style="color:var(--heading);background:var(--card);">
+                            @item.Q
+                        </button>
+                    </h2>
+                    <div id="faqCollapse-@i" class="accordion-collapse collapse @(i == 0 ? "show" : "")" aria-labelledby="faqHeading-@i" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body" style="color:var(--body-text);font-size:15px;">@item.A</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="card text-center p-4 mt-4" style="border:1px dashed var(--border);border-radius:var(--radius);background:var(--card);">
+            <p class="mb-2 fw-semibold" style="color:var(--heading);">Still unsure about something?</p>
+            <p class="text-muted small mb-3">Our support team answers every message within one working day.</p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a asp-controller="Home" asp-action="Contact" class="btn btn-primary-green btn-pill px-4">Contact Support</a>
+                <a asp-controller="Products" asp-action="Index" class="btn btn-outline-green btn-pill px-4">Browse Produce</a>
+            </div>
+        </div>
+    </div>
+</div>

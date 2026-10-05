@@ -1,0 +1,238 @@
+@model MarketLink.Models.Market
+@{
+    ViewData["Title"] = Model.Name;
+    var stalls = (IEnumerable<MarketLink.Models.FarmerMarket>)ViewBag.Stalls;
+    var products = (IEnumerable<MarketLink.Models.Product>)ViewBag.Products;
+    var slots = (IEnumerable<MarketLink.Models.PickupSlot>)ViewBag.Slots;
+    string[] openDays = string.IsNullOrWhiteSpace(Model.OpenDays)
+        ? []
+        : Model.OpenDays.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+
+<div style="background:var(--card);border-bottom:1px solid var(--border);padding:40px 0;">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb" style="margin-bottom:16px;">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Markets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 style="font-weight:800;color:var(--heading);margin-bottom:8px;">@Model.Name</h1>
+                <div class="d-flex gap-3 align-items-center flex-wrap text-muted">
+                    <span><i class="fas fa-map-marker-alt me-1 text-danger"></i>@Model.Address, @Model.City, @Model.State</span>
+                    @if (Model.IsFeatured)
+                    {
+                        <span class="badge badge-success">Featured</span>
+                    }
+                </div>
+            </div>
+            <div class="d-flex gap-4 text-center">
+                <div>
+                    <div style="font-size:24px;font-weight:800;color:var(--heading);">@stalls.Count()</div>
+                    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Farms</div>
+                </div>
+                <div>
+                    <div style="font-size:24px;font-weight:800;color:var(--heading);">@products.Count()</div>
+                    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Produce</div>
+                </div>
+                <div>
+                    <div style="font-size:24px;font-weight:800;color:var(--heading);">@slots.Count()</div>
+                    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Pickup Times</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-5">
+        <div class="col-12 col-lg-8">
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <h3 class="mb-3" style="font-weight:800;">About this market</h3>
+                <p style="font-size:1.05rem;color:var(--body-text);line-height:1.7;">@Model.Description</p>
+            }
+
+            <h3 class="mb-4 mt-5" style="font-weight:800;">Farms at this market</h3>
+            @if (stalls.Any())
+            {
+                <div class="row g-4">
+                    @foreach (var stall in stalls)
+                    {
+                        <div class="col-md-6 animate-on-scroll">
+                            <div class="card h-100" style="border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div style="width:56px;height:56px;flex:0 0 56px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;">
+                                        @(stall.Farmer.FarmName.Substring(0, 1))
+                                    </div>
+                                    <div>
+                                        <h5 style="font-weight:700;margin:0;">@stall.Farmer.FarmName</h5>
+                                        @if (!string.IsNullOrEmpty(stall.StallNumber))
+                                        {
+                                            <span class="text-muted" style="font-size:13px;"><i class="fas fa-store me-1"></i>Stall @stall.StallNumber</span>
+                                        }
+                                    </div>
+                                </div>
+                                <p style="font-size:13px;color:var(--muted);min-height:40px;">@stall.Farmer.Description</p>
+                                <div class="mt-auto pt-3" style="border-top:1px solid var(--border);">
+                                    <a asp-controller="Farmers" asp-action="Details" asp-route-id="@stall.FarmerId" class="btn btn-sm btn-outline-green">Visit farm</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info border-0 shadow-sm" style="border-radius:12px;">
+                    No farms are listed at this market yet.
+                </div>
+            }
+
+            <h3 class="mb-4 mt-5" style="font-weight:800;">Fresh produce for pickup here</h3>
+            @if (products.Any())
+            {
+                <div class="row g-4">
+                    @foreach (var p in products)
+                    {
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="product-card card h-100 border-0 shadow-sm">
+                                <a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug" class="text-decoration-none">
+                                    <div class="product-img-wrapper" style="height:200px;overflow:hidden;">
+                                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "/images/placeholder.svg" : p.ImageUrl)" class="card-img-top" alt="@p.Name" style="height:100%;object-fit:cover;">
+                                    </div>
+                                </a>
+                                <div class="card-body d-flex flex-column">
+                                    <a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug" class="text-decoration-none text-dark">
+                                        <h6 class="card-title fw-bold">@p.Name</h6>
+                                    </a>
+                                    <div style="font-size:12px;color:var(--muted);" class="mb-2">@p.Farmer.FarmName</div>
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">$@p.PricePerKg.ToString("0.00")/@p.Unit</span>
+                                        <button class="btn btn-sm btn-primary-green btn-circle" data-quantities="@p.AvailableQuantities" onclick="ML.Cart.addItemDefault(this, @p.Id)" title="Add to Cart">
+                                            <i class="fas fa-cart-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <p class="mt-4 mb-0"><a asp-controller="Products" asp-action="Index" class="btn btn-sm btn-outline-green">Browse all produce</a></p>
+            }
+            else
+            {
+                <div class="alert alert-info border-0 shadow-sm" style="border-radius:12px;">
+                    These farms have not listed any produce for pickup yet.
+                </div>
+            }
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card mb-4" style="border:none;box-shadow:var(--shadow-lg);border-radius:var(--radius);overflow:hidden;position:sticky;top:100px;">
+                <div id="market-map" style="height:260px;width:100%;background:#e9ecef;"></div>
+                <div class="card-body p-4">
+                    <h6 style="font-weight:700;margin-bottom:8px;"><i class="fas fa-location-dot me-2 text-primary"></i>Getting there</h6>
+                    <p class="mb-0" style="font-size:14px;color:var(--body-text);">@Model.Address, @Model.City, @Model.State</p>
+                    <button type="button" class="btn btn-primary-green btn-sm mt-3 w-100" onclick="ML.openDirections(@Model.Latitude, @Model.Longitude)"><i class="fas fa-route me-2"></i>Get Directions</button>
+                </div>
+            </div>
+
+            <div class="card mb-4" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--card);">
+                <div class="card-body p-4">
+                    <h6 style="font-weight:700;margin-bottom:16px;">Market information</h6>
+                    <ul class="list-unstyled mb-0">
+                        @if (!string.IsNullOrWhiteSpace(Model.OperatingHours))
+                        {
+                            <li class="mb-3 d-flex align-items-start gap-3">
+                                <i class="fas fa-clock text-primary mt-1"></i>
+                                <div>
+                                    <strong>Hours</strong><br />
+                                    <span class="text-muted">@Model.OperatingHours</span>
+                                </div>
+                            </li>
+                        }
+                        @if (openDays.Length > 0)
+                        {
+                            <li class="mb-3 d-flex align-items-start gap-3">
+                                <i class="fas fa-calendar-week text-primary mt-1"></i>
+                                <div>
+                                    <strong>Open days</strong><br />
+                                    <span class="text-muted">@string.Join(", ", openDays)</span>
+                                </div>
+                            </li>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                        {
+                            <li class="mb-3 d-flex align-items-start gap-3">
+                                <i class="fas fa-phone text-primary mt-1"></i>
+                                <div>
+                                    <strong>Phone</strong><br />
+                                    <a class="text-muted" href="tel:@Model.Phone.Replace(" ", string.Empty)">@Model.Phone</a>
+                                </div>
+                            </li>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Email))
+                        {
+                            <li class="mb-3 d-flex align-items-start gap-3">
+                                <i class="fas fa-envelope text-primary mt-1"></i>
+                                <div>
+                                    <strong>Email</strong><br />
+                                    <a class="text-muted" href="mailto:@Model.Email">@Model.Email</a>
+                                </div>
+                            </li>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Website))
+                        {
+                            <li class="d-flex align-items-start gap-3">
+                                <i class="fas fa-globe text-primary mt-1"></i>
+                                <div>
+                                    <strong>Website</strong><br />
+                                    <a class="text-muted" href="@Model.Website" target="_blank" rel="noopener">@Model.Website</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--card);">
+                <div class="card-body p-4">
+                    <h6 style="font-weight:700;margin-bottom:16px;"><i class="fas fa-basket-shopping me-2 text-primary"></i>Pickup times</h6>
+                    @if (slots.Any())
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var s in slots)
+                            {
+                                <li class="d-flex justify-content-between align-items-center gap-3 py-2" style="border-bottom:1px solid var(--border);">
+                                    <div>
+                                        <div style="font-weight:600;color:var(--heading);font-size:14px;">@s.DayOfWeek</div>
+                                        <div style="font-size:12px;color:var(--muted);">@s.Farmer.FarmName</div>
+                                    </div>
+                                    <span class="text-muted" style="font-size:13px;">@s.StartTime.ToString("h:mm tt") &ndash; @s.EndTime.ToString("h:mm tt")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted" style="font-size:14px;">No pickup times have been published for this market yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            ML.initMarketMap('market-map', [
+                { name: '@Model.Name.Replace("'", "\\'")', address: '@Model.Address.Replace("'", "\\'")', lat: @Model.Latitude, lng: @Model.Longitude }
+            ]);
+        });
+    </script>
+}

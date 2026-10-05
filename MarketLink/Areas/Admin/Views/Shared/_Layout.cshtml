@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – Admin Panel | MarketLink</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body data-authenticated="true">
+@{
+    var currentCtrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAct = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<div class="dashboard-overlay" id="sidebar-overlay"></div>
+
+
+<aside class="dashboard-sidebar" id="admin-sidebar">
+    <div class="sidebar-brand-fixed" id="sidebar-brand-header">
+        <div class="d-flex align-items-center justify-content-between">
+            <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="brand-link">
+                <div class="brand-icon-box">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="brand-text-box">
+                    <h4 class="brand-title">MarketLink<span> Admin</span></h4>
+                    <p class="brand-user"><i class="fas fa-circle text-success me-1" style="font-size:7px;"></i>@(User.Identity?.Name ?? "Administrator")</p>
+                </div>
+            </a>
+            <button type="button" class="btn btn-sm btn-light d-lg-none rounded-circle" id="sidebar-close-btn" style="width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;" aria-label="Close Sidebar">
+                <i class="fas fa-times text-muted"></i>
+            </button>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu-list">
+            <li class="sidebar-section-header">
+                <span class="sidebar-section-label">Overview</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Dashboard" && currentAct == "Index" ? "active" : "")" asp-area="Admin" asp-controller="Dashboard" asp-action="Index" title="Dashboard">
+                    <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
+                    <span class="sidebar-nav-text">Dashboard</span>
+                </a>
+            </li>
+
+            <li class="sidebar-section-header">
+                <span class="sidebar-section-label">Management</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Farmers" ? "active" : "")" asp-area="Admin" asp-controller="Farmers" asp-action="Index" title="Farmers">
+                    <span class="nav-icon"><i class="fas fa-tractor"></i></span>
+                    <span class="sidebar-nav-text">Farmers</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Customers" ? "active" : "")" asp-area="Admin" asp-controller="Customers" asp-action="Index" title="Customers">
+                    <span class="nav-icon"><i class="fas fa-users"></i></span>
+                    <span class="sidebar-nav-text">Customers</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Products" ? "active" : "")" asp-area="Admin" asp-controller="Products" asp-action="Index" title="Products">
+                    <span class="nav-icon"><i class="fas fa-box"></i></span>
+                    <span class="sidebar-nav-text">Products</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Categories" ? "active" : "")" asp-area="Admin" asp-controller="Categories" asp-action="Index" title="Categories">
+                    <span class="nav-icon"><i class="fas fa-tags"></i></span>
+                    <span class="sidebar-nav-text">Categories</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Markets" ? "active" : "")" asp-area="Admin" asp-controller="Markets" asp-action="Index" title="Markets">
+                    <span class="nav-icon"><i class="fas fa-store"></i></span>
+                    <span class="sidebar-nav-text">Markets</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Orders" ? "active" : "")" asp-area="Admin" asp-controller="Orders" asp-action="Index" title="Orders">
+                    <span class="nav-icon"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="sidebar-nav-text">Orders</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Reviews" ? "active" : "")" asp-area="Admin" asp-controller="Reviews" asp-action="Index" title="Reviews">
+                    <span class="nav-icon"><i class="fas fa-star"></i></span>
+                    <span class="sidebar-nav-text">Reviews</span>
+                </a>
+            </li>
+
+            <li class="sidebar-section-header">
+                <span class="sidebar-section-label">Analytics</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Reports" && currentAct == "Index" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Index" title="Reports">
+                    <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
+                    <span class="sidebar-nav-text">Reports</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Reports" && currentAct == "Analytics" ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Analytics" title="Analytics">
+                    <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                    <span class="sidebar-nav-text">Analytics</span>
+                </a>
+            </li>
+
+            <li class="sidebar-section-header">
+                <span class="sidebar-section-label">System</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Dashboard" && currentAct == "Notifications" ? "active" : "")" asp-area="Admin" asp-controller="Dashboard" asp-action="Notifications" title="Notifications">
+                    <span class="nav-icon"><i class="fas fa-bell"></i></span>
+                    <span class="sidebar-nav-text">Notifications</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Dashboard" && currentAct == "Announcements" ? "active" : "")" asp-area="Admin" asp-controller="Dashboard" asp-action="Announcements" title="Announcements">
+                    <span class="nav-icon"><i class="fas fa-bullhorn"></i></span>
+                    <span class="sidebar-nav-text">Announcements</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Dashboard" && currentAct == "Settings" ? "active" : "")" asp-area="Admin" asp-controller="Dashboard" asp-action="Settings" title="Settings">
+                    <span class="nav-icon"><i class="fas fa-cog"></i></span>
+                    <span class="sidebar-nav-text">Settings</span>
+                </a>
+            </li>
+            <li class="sidebar-menu-item">
+                <a class="sidebar-nav-item @(currentCtrl == "Home" ? "active" : "")" asp-area="" asp-controller="Home" asp-action="Index" title="View Site">
+                    <span class="nav-icon"><i class="fas fa-external-link-alt"></i></span>
+                    <span class="sidebar-nav-text">View Site</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer-fixed">
+        <form asp-area="" asp-controller="Auth" asp-action="Logout" method="post" class="w-100">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="sidebar-signout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="sidebar-nav-text">Sign Out</span>
+            </button>
+        </form>
+    </div>
+</aside>
+
+
+<div class="dashboard-content">
+
+    <header class="dashboard-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button id="sidebar-toggle" class="btn btn-sm btn-sidebar-toggle" title="Toggle Sidebar" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div>
+                <h6 style="margin:0;font-size:16px;color:var(--heading);">@ViewData["Title"]</h6>
+                @if (ViewData["Subtitle"] != null)
+                {
+                    <p style="margin:0;font-size:12px;color:var(--muted);">@ViewData["Subtitle"]</p>
+                }
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button class="dark-mode-toggle" aria-label="Toggle dark mode"></button>
+            <a asp-area="Admin" asp-controller="Dashboard" asp-action="Notifications" class="nav-icon-btn" title="Notification broadcast centre">
+                <i class="fas fa-bell"></i>
+            </a>
+            <form asp-area="" asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--body-text);">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </button>
+            </form>
+        </div>
+    </header>
+
+
+    <div class="dashboard-body">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success auto-dismiss" style="border-radius:var(--radius-sm);border-left:4px solid var(--success);">
+                <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger auto-dismiss" style="border-radius:var(--radius-sm);border-left:4px solid var(--danger);">
+                <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            </div>
+        }
+        @RenderBody()
+    </div>
+</div>
+
+
+<div class="ai-search-widget">
+    <div class="ai-chat-panel">
+        <div class="ai-chat-header">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+            <div>
+                <h6>Admin Assistant</h6>
+                <p>Ask about platform stats &amp; activity!</p>
+            </div>
+        </div>
+        <div class="ai-chat-messages"></div>
+        <div class="ai-chat-input">
+            <input type="text" placeholder="Ask a question..." />
+            <button type="button"><i class="fas fa-paper-plane" style="font-size:13px;"></i></button>
+        </div>
+    </div>
+    <button class="ai-toggle-btn" title="Admin Assistant">
+        <i class="fas fa-robot"></i>
+    </button>
+</div>
+
+<div class="toast-container-green"></div>
+<script>
+    window.MarketLinkRoutes = {
+        products: '@Url.Action("Index", "Products", new { area = "" })',
+        login: '@Url.Action("Login", "Auth", new { area = "" })',
+        cartAdd: '@Url.Action("AddItem", "Cart", new { area = "Customer" })',
+        favoriteToggle: '@Url.Action("Toggle", "Favorites", new { area = "Customer" })',
+        productBySlug: '@Url.RouteUrl("product-slug", new { slug = "__SLUG__" })',
+        assistantAsk: '@Url.Action("Ask", "Assistant", new { area = "Admin" })'
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

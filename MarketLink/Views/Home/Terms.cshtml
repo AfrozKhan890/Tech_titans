@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Terms & Conditions";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9">
+            <div class="mb-5">
+                <h1 class="fw-bold mb-2" style="font-family:var(--font-heading);color:var(--heading);">Terms &amp; Conditions</h1>
+                <p class="text-muted mb-0">Last updated: @(DateTime.UtcNow.ToString("MMMM d, yyyy"))</p>
+            </div>
+
+            <p style="color:var(--body-text);">These terms explain what you can expect from MarketLink eGreen Basket and what we expect from you when you buy produce or sell from a farm stall through the marketplace.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">1. The marketplace</h4>
+            <p style="color:var(--body-text);">MarketLink connects shoppers with independent local growers. Farmers list their own produce, set their own prices and prepare their own pickup windows. MarketLink provides the listing, ordering and messaging tools; the sale itself happens between you and the farm.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">2. Accounts</h4>
+            <p style="color:var(--body-text);">Buyer, seller and administrator accounts each have their own dashboard. You are responsible for keeping your password safe and for activity carried out under your account. Seller stalls are reviewed before their produce becomes visible to shoppers, and stalls may be suspended if listings prove inaccurate.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">3. Orders, pickup and payment</h4>
+            <p style="color:var(--body-text);">Stock is reserved for you when you check out. Each farm in your basket becomes its own order with its own pickup slot, so please collect within the window you selected. Payment is made directly to the farmer at pickup unless a market announces otherwise. Produce sold fresh is best collected the same day.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">4. Cancellations and refunds</h4>
+            <p style="color:var(--body-text);">You may cancel while an order is still pending or accepted; the quantities return to the farm's stock automatically. After pickup, quality concerns are settled with the farm directly — open the order and use the farmer's contact details, or ask our support team to mediate.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">5. Listings and content</h4>
+            <p style="color:var(--body-text);">Farmers must describe their produce honestly, including organic status and available weight. Photos should show what a buyer will actually receive. Administrators may edit or remove listings that mislead shoppers or break marketplace rules.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">6. Your data</h4>
+            <p style="color:var(--body-text);">We store the account, address and order details needed to run pickups and to notify you about your orders. Read the <a asp-controller="Home" asp-action="Privacy">Privacy Policy</a> for the full picture.</p>
+
+            <h4 class="fw-bold mt-5 mb-2" style="color:var(--heading);">7. Changes and contact</h4>
+            <p style="color:var(--body-text);">We update these terms as the marketplace grows and will post the revised date above. Questions about them are welcome at <a href="mailto:support@marketlink.com">support@marketlink.com</a> or through the <a asp-controller="Home" asp-action="Contact">contact page</a>.</p>
+        </div>
+    </div>
+</div>

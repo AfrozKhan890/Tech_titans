@@ -1,0 +1,143 @@
+@model MarketLink.Models.Product
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.Name;
+    var quantityOptions = (JsonSerializer.Deserialize<List<int>>(Model.AvailableQuantities ?? "[]") ?? new List<int>())
+        .Where(q => q > 0)
+        .Distinct()
+        .OrderBy(q => q)
+        .ToList();
+    if (quantityOptions.Count == 0) quantityOptions.Add(1);
+    var defaultQuantity = quantityOptions[0];
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-categorySlug="@Model.Category?.Slug">@Model.Category?.Name</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5 mb-5">
+
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm" style="border-radius:24px;overflow:hidden;">
+                <img id="product-main-image" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/placeholder.svg" : Model.ImageUrl)" alt="@Model.Name" style="width:100%;height:450px;object-fit:cover;" />
+                @if (Model.IsOrganic)
+                {
+                    <span class="badge badge-success" style="position:absolute;top:20px;left:20px;font-size:14px;padding:8px 16px;">100% Organic</span>
+                }
+            </div>
+
+        </div>
+
+
+        <div class="col-12 col-lg-6">
+            <div class="mb-4">
+                <h1 style="font-weight:800;color:var(--heading);margin-bottom:8px;">@Model.Name</h1>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div style="font-size:2rem;font-weight:700;color:var(--primary-text);">$@Model.PricePerKg.ToString("0.00")<span style="font-size:1rem;color:var(--muted);font-weight:normal;"> / @Model.Unit</span></div>
+                    @if (Model.StockKg > 0)
+                    {
+                        <span class="badge bg-success" style="background-color:rgba(156,171,132,0.1)!important;color:var(--success-text)!important;border:1px solid var(--success-text);">In Stock (@Model.StockKg @Model.Unit)</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Out of Stock</span>
+                    }
+                </div>
+                <p style="font-size:1.1rem;color:var(--body-text);line-height:1.6;">
+                    @Model.Description
+                </p>
+            </div>
+
+            <hr style="border-color:var(--border);" class="my-4" />
+
+            <div class="mb-4">
+                <h6 style="font-weight:700;margin-bottom:12px;">Sold By</h6>
+                <div class="d-flex align-items-center p-3" style="background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                    <div style="width:50px;height:50px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;margin-right:16px;">
+                        @(Model.Farmer?.FarmName.Substring(0,1))
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 style="margin:0;font-weight:700;">@Model.Farmer?.FarmName</h6>
+                        <div style="font-size:13px;color:var(--muted);"><i class="fas fa-map-marker-alt me-1"></i> Local Farm</div>
+                    </div>
+                    <a asp-controller="Farmers" asp-action="Details" asp-route-id="@Model.FarmerId" class="btn btn-sm btn-outline-green">View Profile</a>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h6 style="font-weight:700;margin-bottom:12px;">Select Quantity</h6>
+                <div class="qty-selector d-flex gap-2 flex-wrap" aria-label="Published quantity options">
+                    @foreach (var quantity in quantityOptions)
+                    {
+                        <button type="button" class="qty-option @(quantity == defaultQuantity ? "selected" : "")" data-qty="@quantity">@quantity @Model.Unit</button>
+                    }
+                </div>
+                <input type="hidden" id="selectedQuantity" value="@defaultQuantity" />
+            </div>
+
+            <div class="d-flex gap-3">
+                @if (Model.IsAvailable && Model.StockKg > 0)
+                {
+                    <button class="btn btn-primary-green btn-lg btn-pill flex-grow-1 shadow" onclick="ML.Cart.addItem(@Model.Id, parseInt(document.getElementById('selectedQuantity').value))">
+                        <i class="fas fa-cart-plus me-2"></i> Add to Cart
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-lg btn-pill flex-grow-1" disabled style="background:var(--bg);border:1px solid var(--border);color:var(--muted);">
+                        <i class="fas fa-ban me-2"></i> @(Model.IsAvailable ? "Out of stock – check back soon" : "Currently unavailable")
+                    </button>
+                }
+                <button class="btn btn-outline-green btn-lg btn-circle" onclick="ML.Favorites.toggle('Product', @Model.Id, this)" title="Add to Favorites">
+                    <i class="@(ViewBag.IsFavorite == true ? "fas" : "far") fa-heart @(ViewBag.IsFavorite == true ? "text-danger" : "")"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 p-3" style="background:rgba(216,233,131,0.2);border-radius:var(--radius-sm);display:flex;gap:12px;align-items:start;">
+                <i class="fas fa-info-circle text-primary mt-1"></i>
+                <div style="font-size:13px;color:var(--heading);">
+                    <strong>Pickup Only:</strong> MarketLink currently supports farm pickup. You will select a pickup time at checkout and pay directly to the farmer.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3"><h3 style="font-weight:800;margin:0;">Customer Reviews</h3><span class="text-warning fw-bold">@(ViewBag.AverageRating > 0 ? $"{ViewBag.AverageRating:0.0}/5" : "No ratings yet")</span></div>
+        @if (ViewBag.CanReview == true)
+        {
+            <div class="card p-4 mb-4" style="border:1px solid var(--border);">
+                <h6 class="fw-bold">Review this product</h6>
+                <form asp-area="Customer" asp-controller="Reviews" asp-action="Submit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <div class="row g-2">
+                        <div class="col-12 col-md-2"><label class="form-label small">Rating</label><select name="rating" class="form-select" required><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Okay</option><option value="2">2 - Poor</option><option value="1">1 - Bad</option></select></div>
+                        <div class="col-12 col-md-10"><label class="form-label small">Title</label><input name="title" maxlength="120" class="form-control" /></div>
+                        <div class="col-12"><label class="form-label small">Comment</label><textarea name="comment" maxlength="2000" required class="form-control" rows="3"></textarea></div>
+                    </div>
+                    <button class="btn btn-primary-green mt-3" type="submit">Submit Review</button>
+                </form>
+            </div>
+        }
+        else if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="alert alert-light border">Reviews become available after you complete a purchase of this product.</div>
+        }
+        else
+        {
+            <div class="alert alert-light border"><a asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Log in</a> to review a completed purchase.</div>
+        }
+        @{ var reviews = ViewBag.Reviews as IEnumerable<MarketLink.Models.Review> ?? Array.Empty<MarketLink.Models.Review>(); }
+        @foreach (var review in reviews)
+        {
+            <div class="card p-3 mb-3" style="border:1px solid var(--border);"><div class="d-flex justify-content-between"><strong>@(review.Customer?.User?.FullName ?? "Customer")</strong><span class="text-warning">@(new string('★', review.Rating))</span></div><div class="small text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</div>@if (!string.IsNullOrWhiteSpace(review.Title)) { <div class="fw-semibold mt-2">@review.Title</div> }<p class="mb-0 mt-2">@review.Comment</p></div>
+        }
+    </div>
+
+</div>

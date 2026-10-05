@@ -1,0 +1,74 @@
+@model MarketLink.Models.Farmer
+@{
+    ViewData["Title"] = Model.FarmName;
+    var products = ViewBag.Products as IEnumerable<MarketLink.Models.Product> ?? Enumerable.Empty<MarketLink.Models.Product>();
+    var markets = ViewBag.Markets as IEnumerable<MarketLink.Models.Market> ?? Enumerable.Empty<MarketLink.Models.Market>();
+    var slots = ViewBag.PickupSlots as IEnumerable<MarketLink.Models.PickupSlot> ?? Enumerable.Empty<MarketLink.Models.PickupSlot>();
+    var reviews = ViewBag.Reviews as IEnumerable<MarketLink.Models.Review> ?? Enumerable.Empty<MarketLink.Models.Review>();
+    var days = slots.Select(s => s.DayOfWeek).Distinct().OrderBy(d => d).ToList();
+    if (!days.Any()) days = markets.SelectMany(m => (m.OpenDays ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).Select(x => Enum.TryParse<DayOfWeek>(x, true, out var d) ? (DayOfWeek?)d : null).Where(x => x.HasValue).Select(x => x!.Value).Distinct().OrderBy(d => d).ToList();
+    var primaryMarket = markets.FirstOrDefault();
+    double? mapLat = primaryMarket?.Latitude ?? Model.Latitude;
+    double? mapLng = primaryMarket?.Longitude ?? Model.Longitude;
+    string mapName = primaryMarket?.Name ?? Model.FarmName;
+    string mapAddress = primaryMarket?.Address ?? Model.Address ?? $"{Model.City}, {Model.State}";
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li><li class="breadcrumb-item"><a asp-action="Index">Farmers</a></li><li class="breadcrumb-item active" aria-current="page">@Model.FarmName</li></ol></nav>
+
+    <div class="row mb-5 g-4">
+        <div class="col-12 col-lg-8">
+            <div class="d-flex align-items-center mb-4">
+                <div style="width:100px;height:100px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:bold;margin-right:24px;">@Model.FarmName.Substring(0,1)</div>
+                <div><h1 style="font-weight:800;color:var(--heading);margin-bottom:8px;">@Model.FarmName</h1><div class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>@(Model.City ?? "")@(string.IsNullOrWhiteSpace(Model.State) ? "" : ", " + Model.State)</div></div>
+            </div>
+            <h4 class="mb-3">About the Farmer</h4><p style="font-size:1.05rem;color:var(--body-text);line-height:1.6;">@Model.Description</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Address)) { <p class="text-muted"><i class="fas fa-location-dot me-2"></i>@Model.Address, @Model.City, @Model.State</p> }
+
+            <div class="row g-3 mt-3">
+                <div class="col-12 col-md-6"><div class="card p-3 h-100" style="border:1px solid var(--border);"><strong><i class="fas fa-store me-2 text-primary"></i>Markets</strong><div class="small text-muted mt-2">@(markets.Any() ? string.Join(", ", markets.Select(m => m.Name)) : "No active market association")</div></div></div>
+                <div class="col-12 col-md-6"><div class="card p-3 h-100" style="border:1px solid var(--border);"><strong><i class="fas fa-calendar-week me-2 text-primary"></i>Operating days</strong><div class="small text-muted mt-2">@(days.Any() ? string.Join(", ", days) : "See active market schedule")</div></div></div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm p-4" style="border-radius:24px;background:var(--bg);">
+                <h5 class="mb-3">Pickup & Location</h5>
+                @if (mapLat.HasValue && mapLng.HasValue) { <div id="farmer-map" style="height:220px;border-radius:12px;overflow:hidden;"></div> }
+                @if (mapLat.HasValue && mapLng.HasValue) { <button type="button" class="btn btn-primary-green w-100 mt-3" onclick="ML.openDirections(@mapLat.Value, @mapLng.Value)"><i class="fas fa-route me-2"></i>Get Directions</button> }
+                <button class="btn btn-outline-green w-100 mt-2 btn-pill" onclick="ML.Favorites.toggle('Farmer', @Model.Id, this)"><i class="far fa-heart me-2"></i>Favorite Farmer</button>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mb-4" style="font-weight:800;">Available Products</h3>
+    <div class="row g-4 mb-5">
+        @if (products.Any()) { foreach (var p in products) { <div class="col-lg-3 col-md-4 col-sm-6"><div class="product-card card h-100 border-0 shadow-sm"><a asp-controller="Products" asp-action="Details" asp-route-slug="@p.Slug"><img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "/images/placeholder.svg" : p.ImageUrl)" alt="@p.Name" style="height:200px;width:100%;object-fit:cover;"></a><div class="card-body d-flex flex-column"><h6 class="fw-bold">@p.Name</h6><div class="small text-muted mb-2">@p.Unit · @p.StockQuantityKg available</div><div class="mt-auto d-flex justify-content-between align-items-center"><span class="text-primary fw-bold">$@p.PricePerKg.ToString("0.00")/@p.Unit</span><button class="btn btn-sm btn-primary-green btn-circle" data-quantities="@p.AvailableQuantities" onclick="ML.Cart.addItemDefault(this, @p.Id)"><i class="fas fa-cart-plus"></i></button></div></div></div></div> } } else { <div class="col-12"><div class="alert alert-info">This farmer has no active products at the moment.</div></div> }
+    </div>
+
+    <h3 class="mb-4" style="font-weight:800;">Customer Reviews</h3>
+    @if (ViewBag.CanReviewFarmer == true)
+    {
+        <div class="card p-4 mb-4" style="border:1px solid var(--border);">
+            <h6 class="fw-bold">Review this farmer</h6>
+            <form asp-area="Customer" asp-controller="Reviews" asp-action="SubmitFarmer" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="farmerId" value="@Model.Id" />
+                <div class="row g-2"><div class="col-12 col-md-2"><label class="form-label small">Rating</label><select name="rating" class="form-select"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></div><div class="col-12 col-md-4"><label class="form-label small">Title</label><input name="title" maxlength="120" class="form-control" /></div><div class="col-12 col-md-6"><label class="form-label small">Comment</label><input name="comment" maxlength="2000" required class="form-control" /></div></div>
+                <button class="btn btn-primary-green mt-3" type="submit">Submit Farmer Review</button>
+            </form>
+        </div>
+    }
+    else if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="alert alert-light border">Complete a purchase from this farmer before submitting a farmer review.</div>
+    }
+    @if (!reviews.Any()) { <div class="alert alert-light border">No reviews yet.</div> } else { foreach (var r in reviews) { <div class="card p-3 mb-3" style="border:1px solid var(--border);"><div class="d-flex justify-content-between"><strong>@(r.Customer?.User?.FullName ?? "Customer")</strong><span class="text-warning">@(new string('★', r.Rating))</span></div><div class="small text-muted">@r.CreatedAt.ToString("MMM dd, yyyy")</div>@if (!string.IsNullOrWhiteSpace(r.Title)) { <div class="fw-semibold mt-2">@r.Title</div> }<p class="mb-1 mt-2">@r.Comment</p>@if (!string.IsNullOrWhiteSpace(r.FarmerResponse)) { <div class="small p-2 mt-2" style="background:var(--bg);border-radius:8px;"><strong>Farmer response:</strong> @r.FarmerResponse</div> }</div> } }
+</div>
+
+@section Scripts {
+    @if (mapLat.HasValue && mapLng.HasValue)
+    {
+        <script>document.addEventListener('DOMContentLoaded',()=>ML.initMarketMap('farmer-map',[{name:'@mapName.Replace("'","\\'")',address:'@mapAddress.Replace("'","\\'")',lat:@mapLat.Value,lng:@mapLng.Value}]));</script>
+    }
+}

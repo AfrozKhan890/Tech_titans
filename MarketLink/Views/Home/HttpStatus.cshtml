@@ -1,0 +1,37 @@
+@model MarketLink.Models.ErrorViewModel
+@{
+    var code = (int?) ViewData["StatusCode"] ?? 404;
+    ViewData["Title"] = code == 404 ? "Page not found" : "Something went wrong";
+    var (icon, heading, blurb) = code switch
+    {
+        404 => ("fa-compass", "This page is off the map",
+            "The link you followed may be broken, outdated, or the page has since been removed from the marketplace."),
+        401 => ("fa-user-lock", "Please sign in first",
+            "This part of the marketplace is only available to signed-in accounts."),
+        403 => ("fa-ban", "Access not granted",
+            "Your current account does not have permission to view this page."),
+        _ => ("fa-exclamation-triangle", "Something went wrong",
+            "We could not complete that request. The team has been notified &mdash; your cart, orders and favorites are untouched.")
+    };
+}
+
+<div class="container" style="padding:80px 0 100px;text-align:center;">
+    <span class="badge bg-light text-dark rounded-pill px-3 py-2" style="font-size:13px;">Error @code</span>
+    <i class="fas @icon mt-4" style="font-size:56px;color:var(--primary-text);display:block;"></i>
+    <h1 class="fw-bold mt-3" style="font-family:var(--font-heading);color:var(--heading);">@heading</h1>
+    <p class="mx-auto" style="max-width:520px;color:var(--muted);font-size:17px;margin-top:12px;">@Html.Raw(blurb)</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap mt-4">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-accent btn-pill px-4">
+            <i class="fas fa-house me-2"></i>Back to the marketplace
+        </a>
+        <a asp-controller="Products" asp-action="Index" class="btn btn-outline-success btn-pill px-4">
+            <i class="fas fa-carrot me-2"></i>Browse produce
+        </a>
+    </div>
+    @if (Model.ShowRequestId)
+    {
+        <p class="mt-4" style="font-size:12px;color:var(--muted);">
+            Reference: <code>@Model.RequestId</code>
+        </p>
+    }
+</div>

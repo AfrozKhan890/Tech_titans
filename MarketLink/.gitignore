@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+wwwroot/uploads/products/*
+!wwwroot/uploads/products/.gitkeep
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.json
+appsettings.Development.json

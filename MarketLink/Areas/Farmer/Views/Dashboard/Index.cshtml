@@ -1,0 +1,359 @@
+@using MarketLink.Models.Enums
+@{
+    ViewData["Title"] = "Dashboard Overview";
+    var recentOrders = ViewBag.RecentOrders as List<MarketLink.Models.Order> ?? new();
+    var upcoming = ViewBag.UpcomingPickups as List<MarketLink.Models.Order> ?? new();
+    var lowStockItems = ViewBag.LowStockItems as List<MarketLink.Models.Product> ?? new();
+    FarmerStatus farmerStatus = ViewBag.FarmerStatus;
+
+    List<T> L<T>(string key) => (ViewData[key] as List<T>) ?? new List<T>();
+    var trendLabels = L<string>("Trend30Labels");
+    var trendRevenue = L<decimal>("Trend30Revenue");
+    var trendOrders = L<int>("Trend30Orders");
+    var statusLabels = L<string>("StatusLabels");
+    var statusData = L<int>("StatusData");
+    var topLabels = L<string>("TopProductLabels");
+    var topData = L<decimal>("TopProductData");
+
+    double revTrend = (double)ViewBag.RevenueTrend;
+    double avgRating = (double)ViewBag.AvgRating;
+    int inStock = (int)ViewBag.InStockCount, lowStock = (int)ViewBag.LowStockCount, outStock = (int)ViewBag.OutOfStockCount;
+    int stockTotal = Math.Max(1, inStock + lowStock + outStock);
+    string greeting = DateTime.Now.Hour < 12 ? "Good morning" : DateTime.Now.Hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+<style>
+    .fd-hero{position:relative;overflow:hidden;border-radius:var(--radius);padding:30px 32px;margin-bottom:24px;color:#fff;
+        background:linear-gradient(115deg,#6b8a2a 0%,#485c1c 50%,#2b3313 100%);border:1px solid var(--border);}
+    .fd-hero::before{content:"";position:absolute;right:-70px;top:-80px;width:280px;height:280px;border-radius:50%;background:rgba(216,233,131,.14);}
+    .fd-hero::after{content:"";position:absolute;right:150px;bottom:-110px;width:220px;height:220px;border-radius:50%;background:rgba(222,128,43,.22);}
+    .fd-hero h3{font-weight:700;margin:0 0 6px;color:#fff;}
+    .fd-hero p{margin:0;color:rgba(255,255,255,.82);font-size:14px;}
+    .fd-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;
+        padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s;}
+    .fd-chip:hover{background:#DE802B;border-color:#DE802B;color:#fff;transform:translateY(-2px);}
+    .fd-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;height:100%;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
+    .fd-kpi:hover{transform:translateY(-4px);box-shadow:var(--shadow);}
+    .fd-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc,#7d9633);}
+    .fd-kpi .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--kb);color:var(--kc);}
+    .fd-kpi .val{font-size:28px;font-weight:700;line-height:1.1;margin:14px 0 2px;color:var(--heading);}
+    .fd-kpi .lbl{font-size:13px;color:var(--muted);}
+    .fd-kpi .sub{font-size:12px;color:var(--muted);margin-top:8px;}
+    .fd-trend{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;}
+    .fd-trend.up{background:rgba(46,160,90,.16);color:#39c07a;}
+    .fd-trend.down{background:rgba(220,53,69,.16);color:#f0707d;}
+    .fd-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);height:100%;}
+    .fd-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+    .fd-head h6{margin:0;font-weight:700;color:var(--heading);}
+    .fd-head small{color:var(--muted);}
+    .fd-body{padding:20px 22px;}
+    .fd-chart{position:relative;height:280px;}
+    .fd-chart.sm{height:230px;}
+    .fd-seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px;}
+    .fd-seg button{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;}
+    .fd-seg button.active{background:var(--primary);color:#fff;}
+    .fd-action{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+        text-decoration:none;color:var(--heading);height:100%;transition:all .2s;}
+    .fd-action:hover{transform:translateY(-3px);border-color:var(--accent-strong,#DE802B);box-shadow:var(--shadow);color:var(--heading);}
+    .fd-action .ai{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+    .fd-action strong{display:block;font-size:14px;}
+    .fd-action span.s{font-size:12px;color:var(--muted);}
+    .fd-stockbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--bg);}
+    .fd-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px dashed var(--border);font-size:14px;}
+    .fd-row:last-child{border-bottom:0;}
+    .fd-stars{color:#f5b942;letter-spacing:2px;}
+</style>
+
+<!-- Hero -->
+<div class="fd-hero">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3" style="position:relative;z-index:2;">
+        <div>
+            <h3>@greeting, @ViewBag.FarmName 🌾</h3>
+            <p>@DateTime.Now.ToString("dddd, MMMM d") · @(ViewBag.PendingCount > 0 ? $"You have {ViewBag.PendingCount} new order(s) waiting for you." : "Your stall is all caught up. Nice work!")</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="fd-chip" asp-area="Farmer" asp-controller="Products" asp-action="Create"><i class="fas fa-plus"></i>Add product</a>
+            <a class="fd-chip" asp-area="Farmer" asp-controller="Orders" asp-action="Index"><i class="fas fa-shopping-basket"></i>Orders</a>
+            <a class="fd-chip" asp-area="Farmer" asp-controller="PickupSlots" asp-action="Index"><i class="fas fa-clock"></i>Pickup slots</a>
+        </div>
+    </div>
+</div>
+
+@if (farmerStatus != FarmerStatus.Approved)
+{
+    <div class="alert @(farmerStatus == FarmerStatus.Pending ? "alert-warning" : "alert-danger")" style="border-radius:var(--radius-sm);border-left:4px solid @(farmerStatus == FarmerStatus.Pending ? "var(--accent)" : "var(--danger)");">
+        <h6 style="margin:0 0 4px;font-weight:700;">
+            <i class="fas fa-hourglass-half me-2"></i>Your farm account is @farmerStatus
+        </h6>
+        @if (farmerStatus == FarmerStatus.Pending)
+        {
+            <div style="font-size:13px;">You can add products and set pickup slots now, but nothing appears in the customer marketplace until an administrator approves your farm. Approvals usually happen within one working day.</div>
+        }
+        else
+        {
+            <div style="font-size:13px;">Your listings are hidden from shoppers while your account is @(farmerStatus.ToString().ToLower()). Please contact MarketLink support to restore your stall.</div>
+        }
+    </div>
+}
+
+<!-- KPI cards -->
+<div class="row g-4 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="fd-kpi" style="--kc:#c9dc6b;--kb:rgba(216,233,131,.18);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="ic"><i class="fas fa-dollar-sign"></i></div>
+                <span class="fd-trend @(revTrend >= 0 ? "up" : "down")">@(revTrend >= 0 ? "▲" : "▼") @Math.Abs(revTrend).ToString("0.#")%</span>
+            </div>
+            <div class="val">$@(((decimal)ViewBag.TotalRevenue).ToString("N0"))</div>
+            <div class="lbl">Total Revenue</div>
+            <div class="sub">$@(((decimal)ViewBag.WeekRevenue).ToString("N0")) in the last 7 days</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="fd-kpi" style="--kc:#e99043;--kb:rgba(222,128,43,.16);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="ic"><i class="fas fa-shopping-cart"></i></div>
+                @if (ViewBag.PendingCount > 0)
+                {
+                    <a asp-area="Farmer" asp-controller="Orders" asp-action="Index" asp-route-status="Pending" class="fd-trend down text-decoration-none" style="background:rgba(242,178,75,.2);color:#f2b24b;">@ViewBag.PendingCount pending</a>
+                }
+            </div>
+            <div class="val">@ViewBag.ActiveCount</div>
+            <div class="lbl">Open Orders</div>
+            <div class="sub">@ViewBag.OrderCount total · avg $@(((decimal)ViewBag.AvgOrderValue).ToString("N2"))</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="fd-kpi" style="--kc:#6fb0ff;--kb:rgba(92,160,240,.16);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="ic"><i class="fas fa-box"></i></div>
+                <span class="fd-trend up">@inStock in stock</span>
+            </div>
+            <div class="val">@ViewBag.ProductCount</div>
+            <div class="lbl">Products Listed</div>
+            <div class="sub">@lowStock low · @outStock out of stock</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="fd-kpi" style="--kc:#f5b942;--kb:rgba(245,185,66,.16);">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="ic"><i class="fas fa-star"></i></div>
+                <span class="fd-trend up">@ViewBag.FulfilmentRate% fulfilled</span>
+            </div>
+            <div class="val">@(avgRating > 0 ? avgRating.ToString("0.0") : "–")<span style="font-size:15px;color:var(--muted);font-weight:500;"> / 5</span></div>
+            <div class="lbl">Customer Rating</div>
+            <div class="sub">@ViewBag.ReviewCount review(s)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><a class="fd-action" asp-area="Farmer" asp-controller="Products" asp-action="Create"><div class="ai" style="background:rgba(125,150,51,.2);color:#a8c24a;"><i class="fas fa-plus"></i></div><div><strong>Add Product</strong><span class="s">List fresh produce</span></div></a></div>
+    <div class="col-6 col-lg-3"><a class="fd-action" asp-area="Farmer" asp-controller="Inventory" asp-action="Index"><div class="ai" style="background:rgba(92,160,240,.16);color:#6fb0ff;"><i class="fas fa-warehouse"></i></div><div><strong>Inventory</strong><span class="s">Update weekly stock</span></div></a></div>
+    <div class="col-6 col-lg-3"><a class="fd-action" asp-area="Farmer" asp-controller="PickupSlots" asp-action="Index"><div class="ai" style="background:rgba(222,128,43,.16);color:#e99043;"><i class="fas fa-clock"></i></div><div><strong>Pickup Slots</strong><span class="s">Set collection windows</span></div></a></div>
+    <div class="col-6 col-lg-3"><a class="fd-action" asp-area="Farmer" asp-controller="Analytics" asp-action="Index"><div class="ai" style="background:rgba(180,138,224,.18);color:#b48ae0;"><i class="fas fa-chart-line"></i></div><div><strong>Analytics</strong><span class="s">See what sells best</span></div></a></div>
+</div>
+
+<!-- Revenue + status -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-8">
+        <div class="fd-panel">
+            <div class="fd-head">
+                <div><h6>Sales Performance</h6><small>Order value (bars) and orders (line)</small></div>
+                <div class="fd-seg" id="fdRange"><button type="button" data-range="7">7 days</button><button type="button" data-range="30" class="active">30 days</button></div>
+            </div>
+            <div class="fd-body"><div class="fd-chart"><canvas id="fdTrend"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="fd-panel">
+            <div class="fd-head"><div><h6>Orders by Status</h6><small>Where your orders stand</small></div></div>
+            <div class="fd-body"><div class="fd-chart"><canvas id="fdStatus"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Best sellers + stock health -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-7">
+        <div class="fd-panel">
+            <div class="fd-head"><div><h6>Best Sellers</h6><small>Top products by sales value</small></div></div>
+            <div class="fd-body">
+                @if (!topLabels.Any())
+                {
+                    <div class="text-center text-muted py-5"><div style="font-size:36px;">🥕</div><div class="small mt-2">Your best sellers will show up after your first sale.</div></div>
+                }
+                else
+                {
+                    <div class="fd-chart sm"><canvas id="fdTop"></canvas></div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div class="fd-panel">
+            <div class="fd-head"><div><h6>Stock Health</h6><small>How your catalogue looks right now</small></div>
+                <a asp-area="Farmer" asp-controller="Inventory" asp-action="Index" class="btn btn-sm btn-outline-green">Manage</a></div>
+            <div class="fd-body">
+                <div class="fd-stockbar mb-3">
+                    <div style="width:@(inStock * 100 / stockTotal)%;background:#39c07a;"></div>
+                    <div style="width:@(lowStock * 100 / stockTotal)%;background:#f2b24b;"></div>
+                    <div style="width:@(outStock * 100 / stockTotal)%;background:#f0707d;"></div>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-3" style="font-size:12px;color:var(--muted);">
+                    <span><i class="fas fa-circle" style="color:#39c07a;font-size:9px;"></i> In stock (@inStock)</span>
+                    <span><i class="fas fa-circle" style="color:#f2b24b;font-size:9px;"></i> Low (@lowStock)</span>
+                    <span><i class="fas fa-circle" style="color:#f0707d;font-size:9px;"></i> Out (@outStock)</span>
+                </div>
+                @if (!lowStockItems.Any())
+                {
+                    <div class="text-center text-muted py-3 small"><i class="fas fa-check-circle" style="color:#39c07a;"></i> All products are well stocked.</div>
+                }
+                @foreach (var p in lowStockItems)
+                {
+                    <div class="fd-row"><span class="fw-semibold" style="color:var(--heading);">@p.Name</span><span class="badge @(p.StockQuantityKg == 0 ? "bg-danger" : "bg-warning text-dark")">@p.StockQuantityKg @p.Unit left</span></div>
+                }
+                @if (avgRating > 0)
+                {
+                    <div class="fd-row mt-2"><span>Your rating</span><span class="fd-stars">@string.Concat(Enumerable.Range(1, 5).Select(i => i <= Math.Round(avgRating) ? "★" : "☆"))</span></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card mb-4" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--card);">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background:transparent;border-bottom:1px solid var(--border);padding:20px;">
+                <h6 style="margin:0;font-weight:700;">Latest Orders</h6>
+                <a asp-area="Farmer" asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-green">View all</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!recentOrders.Any())
+                {
+                    <div class="text-center py-5">
+                        <div style="font-size:40px;margin-bottom:10px;">🧺</div>
+                        <p class="text-muted mb-1" style="font-weight:600;">No orders yet</p>
+                        <p class="text-muted small mb-0">Once shoppers buy your produce, orders appear here.</p>
+                        <a asp-area="Farmer" asp-controller="Products" asp-action="Create" class="btn btn-sm btn-outline-green mt-3"><i class="fas fa-plus me-1"></i>Add your first product</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0" style="font-size:14px;">
+                            <thead style="background:var(--bg);">
+                                <tr>
+                                    <th style="border:0;padding:12px 20px;">Order</th>
+                                    <th style="border:0;padding:12px 20px;">Customer</th>
+                                    <th style="border:0;padding:12px 20px;">Items</th>
+                                    <th style="border:0;padding:12px 20px;">Total</th>
+                                    <th style="border:0;padding:12px 20px;">Status</th>
+                                    <th style="border:0;padding:12px 20px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in recentOrders)
+                                {
+                                    <tr>
+                                        <td style="border-color:var(--border);padding:12px 20px;font-weight:600;">@o.OrderNumber</td>
+                                        <td style="border-color:var(--border);padding:12px 20px;">@(o.Customer?.User == null ? "Customer" : (o.Customer.User.FirstName + " " + o.Customer.User.LastName).Trim())</td>
+                                        <td style="border-color:var(--border);padding:12px 20px;color:var(--muted);">@o.Items.Count</td>
+                                        <td style="border-color:var(--border);padding:12px 20px;">$@o.TotalAmount.ToString("0.00")</td>
+                                        <td style="border-color:var(--border);padding:12px 20px;"><span class="badge badge-info">@o.Status</span></td>
+                                        <td style="border-color:var(--border);padding:12px 20px;text-align:right;">
+                                            <a asp-area="Farmer" asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-outline-green">Manage</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card h-100" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--card);">
+            <div class="card-header" style="background:transparent;border-bottom:1px solid var(--border);padding:20px;">
+                <h6 style="margin:0;font-weight:700;">Upcoming Pickups</h6>
+            </div>
+            <div class="card-body p-0">
+                @if (!upcoming.Any())
+                {
+                    <div class="p-4 text-center">
+                        <p class="text-muted small mb-2">Nothing scheduled.</p>
+                        <p class="text-muted" style="font-size:13px;">Pickup windows appear here after customers check out. Add slots if you have none yet.</p>
+                        <a asp-area="Farmer" asp-controller="PickupSlots" asp-action="Index" class="btn btn-sm btn-outline-green mt-2"><i class="fas fa-clock me-1"></i>Manage pickup slots</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var o in upcoming)
+                        {
+                            <div class="list-group-item" style="padding:16px 20px;border-bottom:1px solid var(--border);background:transparent;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 style="margin:0;font-weight:600;">@(o.Market?.Name ?? "Farm pickup")</h6>
+                                    <span class="badge badge-info">@(o.PickupTime?.ToString("hh:mm tt"))</span>
+                                </div>
+                                <div style="font-size:13px;color:var(--muted);">@o.OrderNumber · @(o.PickupTime?.ToString("MMM dd")) · @o.Items.Count items</div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof Chart === 'undefined') return;
+        const muted = (getComputedStyle(document.documentElement).getPropertyValue('--muted') || '#9aa58a').trim();
+        const grid = 'rgba(160,175,130,.14)';
+        const palette = ['#7d9633', '#e08a3c', '#d8e983', '#6fb0ff', '#b48ae0', '#f0707d'];
+        Chart.defaults.color = muted;
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+        const money = v => '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+        const labels = @Json.Serialize(trendLabels), rev = @Json.Serialize(trendRevenue), ord = @Json.Serialize(trendOrders);
+        const tctx = document.getElementById('fdTrend').getContext('2d');
+        const g = tctx.createLinearGradient(0, 0, 0, 300);
+        g.addColorStop(0, 'rgba(125,150,51,.95)'); g.addColorStop(1, 'rgba(125,150,51,.25)');
+        const chart = new Chart(tctx, {
+            data: { labels, datasets: [
+                { type: 'bar', label: 'Order value', data: rev, backgroundColor: g, borderRadius: 6, yAxisID: 'y', order: 2 },
+                { type: 'line', label: 'Orders', data: ord, borderColor: '#e08a3c', backgroundColor: '#e08a3c', tension: .4, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, yAxisID: 'y1', order: 1 }
+            ] },
+            options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                    y: { beginAtZero: true, grid: { color: grid }, ticks: { callback: money } },
+                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 } } },
+                plugins: { legend: { labels: { usePointStyle: true } }, tooltip: { callbacks: { label: c => c.dataset.label === 'Order value' ? ' Order value: ' + money(c.raw) : ' Orders: ' + c.raw } } } }
+        });
+        document.querySelectorAll('#fdRange button').forEach(b => b.addEventListener('click', () => {
+            document.querySelectorAll('#fdRange button').forEach(x => x.classList.remove('active')); b.classList.add('active');
+            const n = parseInt(b.dataset.range, 10);
+            chart.data.labels = labels.slice(-n); chart.data.datasets[0].data = rev.slice(-n); chart.data.datasets[1].data = ord.slice(-n); chart.update();
+        }));
+
+        const colors = { Pending: '#f2b24b', Confirmed: '#6fb0ff', Accepted: '#5aa0e0', Processing: '#b48ae0', ReadyForPickup: '#d8e983', Completed: '#39c07a', Cancelled: '#f0707d' };
+        const sl = @Json.Serialize(statusLabels);
+        new Chart(document.getElementById('fdStatus'), { type: 'doughnut',
+            data: { labels: sl, datasets: [{ data: @Json.Serialize(statusData), backgroundColor: sl.map(x => colors[x] || '#9cab84'), borderWidth: 0, hoverOffset: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, padding: 12 } } } } });
+
+        const top = document.getElementById('fdTop');
+        if (top) new Chart(top, { type: 'bar',
+            data: { labels: @Json.Serialize(topLabels), datasets: [{ data: @Json.Serialize(topData), backgroundColor: palette, borderRadius: 6 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + money(c.raw) } } },
+                scales: { x: { beginAtZero: true, grid: { color: grid }, ticks: { callback: money } }, y: { grid: { display: false } } } } });
+    });
+    </script>
+}

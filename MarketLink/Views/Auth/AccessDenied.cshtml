@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div style="background:var(--bg);min-height:70vh;display:flex;align-items:center;padding:40px 0;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <div style="font-size:56px;margin-bottom:16px;">&#128274;</div>
+                <h4 style="font-weight:700;color:var(--heading);">You do not have access to that page</h4>
+                <p style="color:var(--muted);font-size:14px;">
+                    The area you tried to open belongs to a different account type. Sign in with the right
+                    account, or head back to the marketplace.
+                </p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <a class="btn btn-outline-green btn-pill px-4" asp-controller="Home" asp-action="Index">Storefront</a>
+                    <a class="btn btn-primary-green btn-pill px-4" asp-controller="Auth" asp-action="Login">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

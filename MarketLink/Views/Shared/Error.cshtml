@@ -1,0 +1,27 @@
+@model MarketLink.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Something went wrong";
+}
+
+<div class="container" style="padding:80px 0 100px;text-align:center;">
+    <i class="fas fa-basket-shopping" style="font-size:56px;color:var(--primary-text);"></i>
+    <h1 class="fw-bold mt-4" style="font-family:var(--font-heading);color:var(--heading);">This basket tipped over</h1>
+    <p class="mx-auto" style="max-width:520px;color:var(--muted);font-size:17px;margin-top:12px;">
+        Something went wrong on our side while handling your request. The team has been notified &mdash;
+        your cart, orders and saved favorites are untouched.
+    </p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap mt-4">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-accent btn-pill px-4">
+            <i class="fas fa-house me-2"></i>Back to the marketplace
+        </a>
+        <a asp-controller="Products" asp-action="Index" class="btn btn-outline-success btn-pill px-4">
+            <i class="fas fa-carrot me-2"></i>Browse produce
+        </a>
+    </div>
+    @if (Model.ShowRequestId)
+    {
+        <p class="mt-4" style="font-size:12px;color:var(--muted);">
+            Reference: <code>@Model.RequestId</code>
+        </p>
+    }
+</div>

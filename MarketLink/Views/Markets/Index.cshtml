@@ -1,0 +1,107 @@
+@model IEnumerable<MarketLink.Models.Market>
+@{
+    ViewData["Title"] = "Local Markets";
+    string search = ViewBag.Search as string ?? "";
+    string city = ViewBag.City as string ?? "";
+    string day = ViewBag.Day as string ?? "";
+    double radius = ViewBag.RadiusKm is double r ? r : 50;
+}
+
+<div style="background:var(--card);border-bottom:1px solid var(--border);padding:40px 0;">
+    <div class="container text-center">
+        <h1 style="font-weight:700;color:var(--heading);margin-bottom:16px;">Local Markets</h1>
+        <p style="color:var(--muted);max-width:600px;margin:0 auto;">
+            Find active farmers markets by location and operating day, or use your device location for real nearby results.
+        </p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <form method="get" class="card p-3 mb-4" style="border:1px solid var(--border);border-radius:var(--radius);">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4"><label class="form-label small fw-semibold">Search</label><input name="search" value="@search" class="form-control" placeholder="Market name or address" /></div>
+            <div class="col-12 col-md-3"><label class="form-label small fw-semibold">Location</label><input name="city" value="@city" class="form-control" placeholder="City or state" /></div>
+            <div class="col-12 col-md-2"><label class="form-label small fw-semibold">Operating day</label><select name="day" class="form-select"><option value="">Any day</option>@foreach (var d in Enum.GetValues<DayOfWeek>()) { <option value="@d" selected="@(day.Equals(d.ToString(), StringComparison.OrdinalIgnoreCase))">@d</option> }</select></div>
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-primary-green flex-grow-1" type="submit">Filter</button>
+                <button class="btn btn-outline-green" type="button" onclick="findNearbyMarkets()"><i class="fas fa-location-crosshairs me-1"></i>Nearby</button>
+                <a class="btn btn-outline-secondary" href="@Url.Action("Index")">Reset</a>
+            </div>
+        </div>
+        <input type="hidden" id="latitude" name="latitude" value="@ViewBag.Latitude" />
+        <input type="hidden" id="longitude" name="longitude" value="@ViewBag.Longitude" />
+        <input type="hidden" name="radiusKm" value="@radius" />
+    </form>
+</div>
+
+<div class="container py-3">
+    <div class="row g-5">
+        <div class="col-12 col-lg-8">
+            <div class="row g-4">
+                @foreach (var m in Model)
+                {
+                    <div class="col-md-6 animate-on-scroll">
+                        <div class="card h-100" style="border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 style="font-weight:700;margin:0;">@m.Name</h5>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+                            <div style="font-size:14px;color:var(--body-text);margin-bottom:8px;">
+                                <i class="fas fa-map-marker-alt text-danger me-2"></i>@m.Address
+                            </div>
+                            <div style="font-size:14px;color:var(--body-text);margin-bottom:16px;">
+                                <i class="fas fa-clock text-primary me-2"></i>@m.OperatingHours
+                            </div>
+                            <p style="font-size:13px;color:var(--muted);">@m.Description</p>
+                            <div class="mt-auto pt-3" style="border-top:1px solid var(--border);">
+                                <div class="d-flex gap-2">
+                                    <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-green flex-grow-1">View Details</a>
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="ML.Favorites.toggle('Market', @m.Id, this)" title="Save preferred market"><i class="far fa-heart"></i></button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="card" style="border:none;box-shadow:var(--shadow-lg);border-radius:var(--radius);overflow:hidden;position:sticky;top:100px;">
+                <div id="market-map" style="height:400px;width:100%;background:#e9ecef;"></div>
+                <div class="card-body p-4 bg-primary-green text-white">
+                    <h6 style="font-weight:700;margin-bottom:8px;"><i class="fas fa-map me-2"></i>Interactive Map</h6>
+                    <p style="font-size:13px;margin:0;opacity:0.9;">Explore all our active market locations on the map. Click a marker to see details.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const locations = [
+                @foreach(var m in Model)
+                {
+                    <text>{ name: '@m.Name.Replace("'","\\'")', address: '@m.Address.Replace("'","\\'")', lat: @m.Latitude, lng: @m.Longitude, url: '@Url.Action("Details", new { id = m.Id })' },</text>
+                }
+            ];
+            const map = ML.initMarketMap('market-map', locations);
+            if(map && locations.length > 0) {
+                const group = new L.featureGroup(locations.map(l => L.marker([l.lat, l.lng])));
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        });
+
+        function findNearbyMarkets() {
+            if (!navigator.geolocation) { alert('Your browser does not provide geolocation.'); return; }
+            navigator.geolocation.getCurrentPosition(position => {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                document.querySelector('form').submit();
+            }, () => alert('Location access was not granted. You can still filter by city or state.'));
+        }
+    </script>
+}
